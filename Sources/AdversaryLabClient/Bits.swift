@@ -8,20 +8,20 @@
 import Foundation
 import Datable
 
-struct SimpleBits: MaybeDatable
+public struct SimpleBits: MaybeDatable
 {
     var buffer: UInt8
     var count: Int
     var byteAligned: Bool
 
-    init()
+    public init()
     {
         buffer = 0
         count = 0
         byteAligned = false
     }
     
-    init?(data: Data)
+    public init?(data: Data)
     {
         guard data.count == 1 else
         {
@@ -33,7 +33,7 @@ struct SimpleBits: MaybeDatable
         byteAligned = true
     }
  
-    var data: Data
+    public var data: Data
     {
         get
         {
@@ -48,7 +48,7 @@ struct SimpleBits: MaybeDatable
         }
     }
     
-    mutating func pack(bit: UInt8) -> Bool
+    public mutating func pack(bit: UInt8) -> Bool
     {
         guard count < 8 else
         {
@@ -56,7 +56,7 @@ struct SimpleBits: MaybeDatable
         }
 
         // Push bit to right-most index
-        if set(bit: bit, index: count-1)
+        if set(bit: bit, index: count)
         {
             count += 1
             byteAligned = count == 8
@@ -68,7 +68,7 @@ struct SimpleBits: MaybeDatable
         }
     }
 
-    mutating func pack(bits: SimpleBits) -> Bool
+    public mutating func pack(bits: SimpleBits) -> Bool
     {
         var mbits = bits
         
@@ -77,7 +77,7 @@ struct SimpleBits: MaybeDatable
             return false
         }
         
-        for _ in [..<mbits.count]
+        for _ in 0..<mbits.count
         {
             guard let bit = mbits.unpackBit() else
             {
@@ -93,7 +93,7 @@ struct SimpleBits: MaybeDatable
         return true
     }
     
-    mutating func unpackBit() -> UInt8?
+    public mutating func unpackBit() -> UInt8?
     {
         // Read bit at left-most index
         guard let result = get(index: 0) else
@@ -109,17 +109,18 @@ struct SimpleBits: MaybeDatable
         return result
     }
 
-    mutating func unpack(bits: Int) -> SimpleBits?
+    public mutating func unpack(bits: Int) -> SimpleBits?
     {
-        if bits > 8
+        if bits > count
         {
             return nil
         }
 
         var result = SimpleBits()
         
-        for _ in [..<bits]
+        for _ in 0..<bits
         {
+            print(index)
             guard let bit = unpackBit() else
             {
                 return nil
@@ -141,41 +142,50 @@ struct SimpleBits: MaybeDatable
             return false
         }
         
-        if (index < 0) || (index > 7)
+        guard (index >= 0) && (index < 8) else
         {
             return false
         }
-        
-        buffer = buffer & (bit << index)
+
+        let offset: UInt8 = UInt8(7) - UInt8(index)
+        buffer = buffer | (bit << offset)
         
         return true
     }
     
     func get(index: Int) -> UInt8?
     {
-        if (index < 0) || (index > 7)
+        guard (index >= 0) && (index < count) else
         {
             return nil
         }
         
-        return buffer | (1 << index)
+        let offset: UInt8 = UInt8(7) - UInt8(index)
+        return (buffer & (1 << offset)) >> offset
     }
 }
 
-struct Bits: MaybeDatable
+public struct Bits: MaybeDatable
 {
     var buffer: Data
     var count: Int
     var byteAligned: Bool
     var leftover: SimpleBits?
+    
+    public init()
+    {
+        buffer = Data()
+        count = 0
+        byteAligned = false
+    }
 
-    init(data: Data) {
+    public init(data: Data) {
         buffer = data
         count = buffer.count * 8
         byteAligned = true
     }
     
-    init(data: Data?, bits: SimpleBits?)
+    public init(data: Data?, bits: SimpleBits?)
     {
         if let bytes = data
         {
@@ -200,7 +210,7 @@ struct Bits: MaybeDatable
         }
     }
     
-    var data: Data
+    public var data: Data
     {
         get
         {
@@ -213,7 +223,7 @@ struct Bits: MaybeDatable
         }
     }
     
-    mutating func pack(bytes: Data) -> Bool
+    public mutating func pack(bytes: Data) -> Bool
     {
         guard byteAligned else
         {
@@ -225,7 +235,7 @@ struct Bits: MaybeDatable
         return true
     }
     
-    mutating func unpack(bytes: Int) -> Data?
+    public mutating func unpack(bytes: Int) -> Data?
     {
         guard byteAligned else
         {
@@ -239,15 +249,47 @@ struct Bits: MaybeDatable
         
         buffer = rest
         count -= bytes * 8
+        byteAligned = count > 0 && count % 8 == 0
+        leftover = nil
         return result
     }
     
-    mutating func pack(bits: Bits)
+    public mutating func pack(bits: Bits)
     {
         
     }
     
-    mutating func unpack(bits: Int) -> Bits?
+    public mutating func unpackBit() -> UInt8?
+    {
+        guard let result = unpack(bits: 1) else
+        {
+            return nil
+        }
+        
+        guard result.count == 1 else
+        {
+            return nil
+        }
+        
+        guard result.buffer.count == 0 else
+        {
+            return nil
+        }
+        
+        guard var bits = result.leftover else
+        {
+            return nil
+        }
+        
+        guard bits.count == 1 else
+        {
+            return nil
+        }
+        
+        return bits.unpackBit()
+    }
+    
+    public mutating func unpack(bits: Int) -> Bits?
     {
         if byteAligned
         {
@@ -304,8 +346,30 @@ struct Bits: MaybeDatable
         }
         else
         {
-            // FIXME - write this case
-            return nil
+            if buffer.count == 0
+            {
+                guard var bs = leftover else
+                {
+                    return nil
+                }
+                
+                guard bits <= bs.count else
+                {
+                    return nil
+                }
+                
+                guard let result = bs.unpack(bits: bits) else
+                {
+                    return nil
+                }
+                
+                return Bits(data: nil, bits: result)
+            }
+            else
+            {
+                // FIXME - write this case
+                return nil
+            }
         }
     }
 }

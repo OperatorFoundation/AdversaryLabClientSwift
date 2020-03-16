@@ -6,25 +6,26 @@
 //
 
 import Foundation
+import AdversaryLabClient
 
-struct ConnectionPackets
+public struct ConnectionPackets
 {
     var Incoming: TCP? = nil
     var Outgoing: TCP? = nil
 }
 
-struct RawConnectionPackets
+public struct RawConnectionPackets
 {
     var Incoming: [TCP] = []
     var Outgoing: [TCP] = []
 }
 
-struct Client
+public struct Client
 {
     
 }
 
-func Connect() -> Client?
+public func Connect() -> Client?
 {
     return Client()
 }
