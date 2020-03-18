@@ -8,6 +8,7 @@
 import Foundation
 import Datable
 
+// SimpleBits is a simplified version of Bits which uses only one byte
 public struct SimpleBits: MaybeDatable
 {
     var buffer: UInt8
@@ -165,6 +166,7 @@ public struct SimpleBits: MaybeDatable
     }
 }
 
+// Bits allows for packing and unpacking of both bytes and bits in relation to an array of bytes of arbitrary length
 public struct Bits: MaybeDatable
 {
     var buffer: Data
@@ -254,9 +256,147 @@ public struct Bits: MaybeDatable
         return result
     }
     
-    public mutating func pack(bits: Bits)
+    public mutating func pack(bits: Bits) -> Bool
     {
-        
+        // Case 1 - we have just bytes
+        if byteAligned
+        {
+            // Case 1.a - we have just bytes and we are adding just bytes
+            if bits.byteAligned
+            {
+                guard pack(bytes: bits.buffer) else
+                {
+                    return false
+                }
+                
+                leftover = nil
+                byteAligned = true
+                
+                return true
+            }
+            else if bits.buffer.count == 0 // Case 1.b - we have just bytes we are adding just bits
+            {
+                guard let rest = bits.leftover else { return false }
+                
+                // Case 1.b.i - we have just bytes and we are adding just bits that make up a full byte
+                if rest.byteAligned
+                {
+                    // Simplifies to Case 1.a
+                    let onlyBytes = Bits(data: rest.data, bits: nil)
+                    guard pack(bits: onlyBytes) else { return false }
+                    
+                    return true
+                }
+                else // Case 1.b.ii - we have just bytes and we are adding just bits that do not make up a full byte
+
+                {
+                    // Copy bits
+                    leftover = rest
+                    byteAligned = false
+                    
+                    return true
+                }
+            }
+            else // Case 1.c - we have just bytes and we are adding both bytes and bits
+            {
+                // Case 1.c decomposes into Case 1.a followed by Case 1.b
+                let onlyBytes = Bits(data: bits.buffer, bits: nil)
+                let onlyBits = Bits(data: nil, bits: bits.leftover)
+                
+                guard pack(bits: onlyBytes) else { return false }
+                guard pack(bits: onlyBits) else { return false }
+                
+                byteAligned = false
+                
+                return true
+            }
+        }
+        else // Case 2 - we have bits (and maybe also bytes)
+        {
+            let neededForAlignment = 8 - (count % 8)
+            
+            // Case 2.a - we have bits and we are adding the exact number of bits for alignment
+            if bits.count == neededForAlignment
+            {
+                guard bits.buffer.count == 0 else
+                {
+                    return false
+                }
+                
+                guard let rest = bits.leftover else
+                {
+                    return false
+                }
+                
+                guard var partial = leftover else
+                {
+                    return false
+                }
+                
+                guard partial.pack(bits: rest) else
+                {
+                    return false
+                }
+                
+                guard partial.byteAligned else
+                {
+                    return false
+                }
+                
+                let byte = partial.data
+                buffer.append(byte)
+                leftover = nil
+                byteAligned = true
+                
+                return true
+            }
+            else if bits.count > neededForAlignment // Case 2.b - we have bits and we are adding enough bits for alignment and then some
+
+            {
+                var mbits = bits // make a mutable copy
+                guard let aligning = mbits.unpack(bits: neededForAlignment) else
+                {
+                    return false
+                }
+                
+                guard pack(bits: aligning) else {
+                    return false
+                }
+                
+                guard pack(bits: bits) else {
+                    return false
+                }
+                
+                return true
+            }
+            else // bits.count < neededForAlignment - Case 2.c - we have bits and we are adding bits, but not enough for alignment - note this implies we are adding just bits and no bytes
+            {
+                guard bits.buffer.count == 0 else
+                {
+                    return false
+                }
+                
+                guard let rest = bits.leftover else
+                {
+                    return false
+                }
+                                
+                guard var partial = leftover else
+                {
+                    return false
+                }
+                
+                guard partial.pack(bits: rest) else
+                {
+                    return false
+                }
+                
+                leftover = partial
+                byteAligned = false
+                
+                return true
+            }
+        }
     }
     
     public mutating func unpackBit() -> UInt8?
@@ -291,8 +431,12 @@ public struct Bits: MaybeDatable
     
     public mutating func unpack(bits: Int) -> Bits?
     {
+        guard bits <= count else { return nil }
+
+        // Case 1 - we have just bytes
         if byteAligned
         {
+            // Case 1.a - we have just bytes and we need just bytes
             if bits % 8 == 0 // This also covers the case where bits == 8
             {
                 guard let bytes = unpack(bytes: bits/8) else
@@ -302,73 +446,136 @@ public struct Bits: MaybeDatable
                 
                 return Bits(data: bytes, bits: nil)
             }
-            else if bits < 8
+            else if bits < 8 // Case 1.b - we have just bytes and we need bits from just the first byte
             {
+                // Get the first byte
                 guard let data = unpack(bytes: 1) else
                 {
                     return nil
                 }
-                
-                guard let bytebits = SimpleBits(data: data) else
+
+                // Working with a single byte is a job for SimpleBits
+                guard var bytebits = SimpleBits(data: data) else
                 {
                     return nil
                 }
 
+                guard let result = bytebits.unpack(bits: bits) else
+                {
+                    return nil
+                }
+                
                 leftover = bytebits
-
-                guard let result = leftover!.unpack(bits: bits) else
-                {
-                    return nil
-                }
+                byteAligned = false
                 
-                return Bits(data: Data(), bits: result)
+                return Bits(data: nil, bits: result)
             }
-            else // bits > 8
+            else // bits > 8 - Case 1.c - we have just bytes and we need bits from multiple bytes
             {
                 let bytes = bits / 8
-                let remainingBits = bits % 8
+                let remainingBits = bits % 8 // remainingBits will always be less than 8
                 
+                // This case decomposes into Case 1.a, followed by Case 1.b
+                // Execute Case 1.a
                 guard let bytesResult = unpack(bytes: bytes) else
                 {
                     return nil
                 }
-                
+
+                // Execute Case 1.b
                 guard let bitsResult = unpack(bits: remainingBits) else
                 {
                     return nil
                 }
-                
+
+                // Combine the results
                 var result = Bits(data: bytesResult)
-                result.pack(bits: bitsResult)
+                guard result.pack(bits: bitsResult) else
+                {
+                    return nil
+                }
                 
                 return result
             }
         }
-        else
+        else if buffer.count == 0 // Case 2 - we have just bits
         {
-            if buffer.count == 0
+            // We have already checked above that bits < count.
+            
+            // Getting bits from bits (without bytes) is a job for SimpleBits
+            guard var bs = leftover else
             {
-                guard var bs = leftover else
-                {
-                    return nil
-                }
-                
-                guard bits <= bs.count else
-                {
-                    return nil
-                }
-                
-                guard let result = bs.unpack(bits: bits) else
-                {
-                    return nil
-                }
-                
-                return Bits(data: nil, bits: result)
-            }
-            else
-            {
-                // FIXME - write this case
                 return nil
+            }
+
+            guard let result = bs.unpack(bits: bits) else
+            {
+                return nil
+            }
+
+            // Convert the SimpleBits result back into Bits
+            return Bits(data: nil, bits: result)
+        }
+        else // Case 3 - we have both bytes and bits
+        {
+            guard let rest = leftover else
+            {
+                return nil
+            }
+            
+            let bytesBitCount = count - rest.count
+            if bits <= bytesBitCount // Case 3.a - we can get the bits we need from just the bytes
+            {
+                // This decomposes to Case 1, followed by recombining the leftover bits
+                
+                // Temporarily remove the bits portion
+                leftover = nil
+
+                // Execute Case 1
+                guard let result = unpack(bits: bits) else
+                {
+                    return nil
+                }
+                
+                // Repack the bits portion
+                guard pack(bits: Bits(data: nil, bits: leftover)) else
+                {
+                    return nil
+                }
+                
+                return result
+            }
+            else // Case 3.b - we need to access both the bytes and bits to get the bits we need
+            {
+                // This decomposes to Case 3.a, followed by Case 2, and then combining the results.
+                
+                // We know from checks above the following facts:
+                // - we have enough total bits to fulfill the request
+                // - we do not have enough bits in just the bytes portion to fulfill the request
+                // Implication: we will use all of the bytes portion and some of the bits portion
+                
+                // Execute Case 3.a
+                // bytesBitCount is the number of bits we can retrieve from just the bytes portion
+                guard var result = unpack(bits: bytesBitCount) else
+                {
+                    return nil
+                }
+                
+                // Execute Case 2 to get the remaining bits needed
+                guard let additional = unpack(bits: bits - bytesBitCount) else
+                {
+                    return nil
+                }
+
+                // Combine the results
+                guard result.pack(bits: additional) else
+                {
+                    return nil
+                }
+                
+                byteAligned = false
+                
+                return result
             }
         }
     }
