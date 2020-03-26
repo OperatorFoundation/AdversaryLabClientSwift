@@ -3,6 +3,7 @@ import Foundation
 import SwiftPCAP
 import SwiftQueue
 import AdversaryLabClient
+//import Rethink
 
 struct Connection: Hashable
 {
@@ -30,6 +31,14 @@ extension Connection
     }
 }
 
+
+
+
+
+
+
+
+
 class State
 {
     var maybeAllowBlock: Bool? = nil
@@ -39,6 +48,7 @@ class State
     let packetChannel: Queue<TCP> = Queue<TCP>()
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
     let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
+    var debug_packetCount = 0
     
     func listenForDataCategory()
     {
@@ -101,18 +111,22 @@ class State
         let packetChannel = Queue<TCP>()
         queue.async
         {
+            print("readPkts")
             self.readPackets(source: packetSource, dest: packetChannel)
         }
 
         guard let selectedPort = UInt16(port) else
         {
+            print("selPort")
             return
         }
 
         queue.async
         {
+            print("capPort")
             self.capturePort(selectedPort)
         }
+        print("saveCaptured")
         saveCaptured(lab, transport)
     }
 
@@ -123,15 +137,51 @@ class State
             let bytes = source.nextPacket()
             if bytes.count == 0
             {
-                print("|")
+                print("\n\n_", terminator: "")
                 sleep(1)
             }
             else
             {
-                print(".")
+                
+                debug_packetCount += 1
+                print("\n\nP# \(debug_packetCount) - bytes \(bytes.count): \n")
+                
+                var count = 0
+                for byte in bytes{
+                    print(String(format: "%02x", byte), terminator: " ")
+                    count += 1
+                    if count % 8 == 0{
+                        print(" ", terminator: "")
+                    }
+                    if count % 16 == 0{
+                        print("")
+                    }
+                }
+                
+                if let epacket = Ethernet(data: Data(bytes)){
+                    print("\nethernet parse success\n")
+                    
+                    if uint16(epacket.type[0]) << 8 | uint16(epacket.type[1]) == 0x0800{
+                        //print("....IPv4....")
+                        if let ippacket = IPv4(data: epacket.payload){
+                            //parse TCP
+                            
+                        } else {
+                            print("\nno parse IPv4\n")
+                        }
+                        
+                    }else {
+                        print("^^^^not IPv4 packet^^^^\n")
+                    }
+
+                }else {
+                    print("\nethernet parse FAIL\n")
+                }
+                
                 if let packet = TCP(data: Data(bytes))
                 {
                     dest.enqueue(packet)
+                    
                 }
             }
         }
@@ -187,6 +237,7 @@ class State
 
     func recordPacket(_ packet: TCP, _ port: UInt16)
     {
+        print("recPkt")
         let conn = NewConnection(packet: packet)
         let incoming = packet.destinationPort == port
         var maybeConnPackets = captured[conn]
@@ -220,24 +271,32 @@ class State
     {
         print("-> Saving captured raw connection packets... ")
         var buffer: [ConnectionPackets] = []
+        var count = 0
         
         while allowBlockChannel.isEmpty
         {
+
+
             if !recordable.isEmpty
             {
+                print("!")
                 guard let connPackets = recordable.dequeue() else
                 {
+                    print(".")
                     continue
                 }
                 
                 if maybeAllowBlock == nil
                 {
+                    print("+")
                     buffer.append(connPackets)
                 }
                 else
                 {
+                    print("**")
                     guard let allowBlock = maybeAllowBlock else
                     {
+                        print("-")
                         continue
                     }
                     
@@ -247,6 +306,7 @@ class State
             }
         }
         
+        print("@")
         guard let allowBlock = allowBlockChannel.dequeue() else
         {
             return
@@ -264,7 +324,7 @@ class State
             AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection)
         }
         
-        // Usually we want both incoming and outgoing packets
+        // Usually we want both incoming and outgoingf packets
         // In the case where we know these are blocked connections
         // We want to record the data even when we have not received a response.
         // This is still a valid blocked case. We expect that some blocked connections will behave in this way.
@@ -294,14 +354,26 @@ class State
     
     func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
-        
+        print("addtrainpk")
     }
     
     func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
     {
-        
+        print("addrawtrainpk")
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 func main()
 {
@@ -326,6 +398,7 @@ func main()
         {
             state.listenForDataCategory()
         }
+        print("3 args")
         state.capture(transport: transport, port: port)
     }
     else if CommandLine.arguments.count == 4
@@ -346,7 +419,7 @@ func main()
             usage()
             return
         }
-        
+        print("4 args")
         state.capture(transport: transport, port: port)
     }
     else
