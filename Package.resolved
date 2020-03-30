@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "Rethink",
+        "repositoryURL": "https://github.com/OperatorFoundation/rethink-swift.git",
+        "state": {
+          "branch": null,
+          "revision": "f8a2e7c7aa424066b8cc8b4aedd73edf180ef3d8",
+          "version": "1.1.0"
+        }
+      },
+      {
         "package": "SwiftHexTools",
         "repositoryURL": "https://github.com/OperatorFoundation/SwiftHexTools",
         "state": {
