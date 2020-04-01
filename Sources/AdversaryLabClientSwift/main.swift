@@ -161,18 +161,20 @@ class State
                 if let epacket = Ethernet(data: Data(bytes)){
                     print("\nethernet parse success\n")
                     
-                    if uint16(epacket.type[0]) << 8 | uint16(epacket.type[1]) == 0x0800{
-                        //print("....IPv4....")
-                        if let ippacket = IPv4(data: epacket.payload){
+                    switch epacket.type {
+                    case .IPv4:
+                                                if let ippacket = IPv4(data: epacket.payload){
                             //parse TCP
                             
                         } else {
                             print("\nno parse IPv4\n")
                         }
                         
-                    }else {
-                        print("^^^^not IPv4 packet^^^^\n")
+                    default:
+                        print("^^^^not IPv4 packet^^^^")
+                        print("Ethernet Packet Type: \(epacket.type.rawValue)")
                     }
+
 
                 }else {
                     print("\nethernet parse FAIL\n")
@@ -431,6 +433,7 @@ func main()
 
 func usage()
 {
+    //dest ip filter, AdversaryLabClient <transport> <port> [ip address] [protocol]
     print("-> AdversaryLabClient <transport> <port> [protocol]")
     print("-> Example: AdversaryLabClient HTTP 80 allow")
     print("-> Example: AdversaryLabClient HTTPS 443 block")

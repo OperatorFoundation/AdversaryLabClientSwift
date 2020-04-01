@@ -15,12 +15,13 @@ extension SimpleBits: MaybeIntable
         {
             return nil
         }
-
+        
         let ui8 = UInt8(int)
         self.init(data: Data(array: [ui8]))
     }
     
     public var int: Int? {
+        
         return Int(buffer)
     }
     
@@ -153,6 +154,7 @@ extension Bits: MaybeIntable
     }
     
     public var int: Int? {
+
         if count > Int.bitWidth
         {
             return nil
