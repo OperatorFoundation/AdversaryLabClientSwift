@@ -13,13 +13,19 @@ public struct SimpleBits: MaybeDatable
 {
     var buffer: UInt8
     var count: Int
+    
     var byteAligned: Bool
+    {
+        get
+        {
+            return count == 8
+        }
+    }
 
     public init()
     {
         buffer = 0
         count = 0
-        byteAligned = false
     }
     
     public init?(data: Data)
@@ -31,7 +37,6 @@ public struct SimpleBits: MaybeDatable
         
         buffer = data[0]
         count = 8
-        byteAligned = true
     }
  
     public var data: Data
@@ -60,7 +65,6 @@ public struct SimpleBits: MaybeDatable
         if set(bit: bit, index: count)
         {
             count += 1
-            byteAligned = count == 8
             return true
         }
         else
@@ -105,7 +109,6 @@ public struct SimpleBits: MaybeDatable
         // Pop bit at left-most index
         buffer = buffer << 1
         count -= 1
-        byteAligned = false
         
         return result
     }
@@ -149,7 +152,8 @@ public struct SimpleBits: MaybeDatable
         }
 
         let offset: UInt8 = UInt8(7) - UInt8(index)
-        buffer = buffer | (bit << offset)
+        let mask = bit << offset
+        buffer = buffer | mask
         
         return true
     }
@@ -170,21 +174,38 @@ public struct SimpleBits: MaybeDatable
 public struct Bits: MaybeDatable
 {
     var buffer: Data
-    var count: Int
-    var byteAligned: Bool
     var leftover: SimpleBits?
     
+    var count: Int
+    {
+        get
+        {
+            if let partial = leftover
+            {
+                return (buffer.count * 8) + partial.count
+            }
+            else
+            {
+                return buffer.count * 8
+            }
+        }
+    }
+    
+    var byteAligned: Bool
+    {
+        get
+        {
+            return buffer.count > 0 && leftover == nil
+        }
+    }
+
     public init()
     {
         buffer = Data()
-        count = 0
-        byteAligned = false
     }
 
     public init(data: Data) {
         buffer = data
-        count = buffer.count * 8
-        byteAligned = true
     }
     
     public init(data: Data?, bits: SimpleBits?)
@@ -192,22 +213,16 @@ public struct Bits: MaybeDatable
         if let bytes = data
         {
             buffer = bytes
-            count = bytes.count * 8
-            byteAligned = true
             leftover = nil
         }
         else
         {
             buffer = Data()
-            count = 0
-            byteAligned = true
             leftover = nil
         }
 
         if let bs = bits
         {
-            count += bs.count
-            byteAligned = bs.byteAligned
             leftover = bs
         }
     }
@@ -233,7 +248,6 @@ public struct Bits: MaybeDatable
         }
         
         buffer.append(bytes)
-        count += bytes.count * 8
         return true
     }
     
@@ -250,10 +264,17 @@ public struct Bits: MaybeDatable
         }
         
         buffer = rest
-        count -= bytes * 8
-        byteAligned = count > 0 && count % 8 == 0
         leftover = nil
         return result
+    }
+
+    public mutating func pack(bit: UInt8) -> Bool
+    {
+        var simple = SimpleBits()
+        guard simple.pack(bit: bit) else {return false}
+        
+        let bits = Bits(data: nil, bits: simple)
+        return pack(bits: bits)
     }
     
     public mutating func pack(bits: Bits) -> Bool
@@ -270,7 +291,6 @@ public struct Bits: MaybeDatable
                 }
                 
                 leftover = nil
-                byteAligned = true
                 
                 return true
             }
@@ -292,8 +312,7 @@ public struct Bits: MaybeDatable
                 {
                     // Copy bits
                     leftover = rest
-                    byteAligned = false
-                    
+
                     return true
                 }
             }
@@ -305,8 +324,6 @@ public struct Bits: MaybeDatable
                 
                 guard pack(bits: onlyBytes) else { return false }
                 guard pack(bits: onlyBits) else { return false }
-                
-                byteAligned = false
                 
                 return true
             }
@@ -346,7 +363,6 @@ public struct Bits: MaybeDatable
                 let byte = partial.data
                 buffer.append(byte)
                 leftover = nil
-                byteAligned = true
                 
                 return true
             }
@@ -369,7 +385,7 @@ public struct Bits: MaybeDatable
                 
                 return true
             }
-            else // bits.count < neededForAlignment - Case 2.c - we have bits and we are adding bits, but not enough for alignment - note this implies we are adding just bits and no bytes
+            else if var partial = leftover // bits.count < neededForAlignment - Case 2.c - we have bits and we are adding bits, but not enough for alignment - note this implies we are adding just bits and no bytes
             {
                 guard bits.buffer.count == 0 else
                 {
@@ -380,19 +396,35 @@ public struct Bits: MaybeDatable
                 {
                     return false
                 }
-                                
-                guard var partial = leftover else
-                {
-                    return false
-                }
-                
+                                                
                 guard partial.pack(bits: rest) else
                 {
                     return false
                 }
                 
                 leftover = partial
-                byteAligned = false
+                
+                return true
+            }
+            else // bits.count < neededForAlignment, leftover == nil - Case 2.d - we have nothing and we are adding bits, but not enough for alignment - note this implies we are adding just bits and no bytes
+            {
+                guard bits.buffer.count == 0 else
+                {
+                    return false
+                }
+                
+                guard let rest = bits.leftover else
+                {
+                    return false
+                }
+
+                var partial = SimpleBits()
+                guard partial.pack(bits: rest) else
+                {
+                    return false
+                }
+                
+                leftover = partial
                 
                 return true
             }
@@ -466,7 +498,6 @@ public struct Bits: MaybeDatable
                 }
                 
                 leftover = bytebits
-                byteAligned = false
                 
                 return Bits(data: nil, bits: result)
             }
@@ -572,8 +603,6 @@ public struct Bits: MaybeDatable
                 {
                     return nil
                 }
-                
-                byteAligned = false
                 
                 return result
             }

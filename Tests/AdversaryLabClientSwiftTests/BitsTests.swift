@@ -209,4 +209,739 @@ final class BitsTests: XCTestCase
         
         XCTAssertEqual(bit, 1)
     }
+    
+    func testSimpleBitsIntableUint8_0()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(0))
+    }
+    
+    func testSimpleBitsIntableUint8_1()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(1))
+    }
+
+    func testSimpleBitsIntableUint8_2()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(2))
+    }
+    
+    func testSimpleBitsIntableUint8_3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(3))
+    }
+    
+    func testSimpleBitsIntableUint16_3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint16 = bits.uint16 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint16, UInt16(3))
+    }
+    
+    func testSimpleBitsIntableUint64_3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint64 = bits.uint64 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint64, UInt64(3))
+    }
+    
+    func testSimpleBitsIntableInt8_0()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(0))
+    }
+    
+    func testSimpleBitsIntableInt8_1()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(1))
+    }
+
+    func testSimpleBitsIntableInt8_2()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(2))
+    }
+    
+    func testSimpleBitsIntableInt8_3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(3))
+    }
+    
+    func testSimpleBitsIntableInt16_3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int16 = bits.int16 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int16, Int16(3))
+    }
+    
+    func testSimpleBitsIntableInt64_3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int64 = bits.int64 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int64, Int64(3))
+    }
+    
+    func testSimpleBitsIntableInt8_Negative127()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(-127))
+    }
+    
+    func testSimpleBitsIntableInt8_Negative1()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(-1))
+    }
+    
+    func testSimpleBitsIntableInt8_Negative3()
+    {
+        var bits = SimpleBits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(-3))
+    }
+    
+    func testBitsIntableUInt8_0()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(0))
+    }
+    
+    func testBitsIntableUInt8_1()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(1))
+    }
+    
+    func testBitsIntableUInt8_2()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(2))
+    }
+    
+    func testBitsIntableUInt8_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint8 = bits.uint8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint8, UInt8(3))
+    }
+    
+    func testBitsIntableUInt16_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint16 = bits.uint16 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint16, UInt16(3))
+    }
+    
+    func testBitsIntableUInt64_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let uint64 = bits.uint64 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(uint64, UInt64(3))
+    }
+    
+    func testBitsIntableInt8_0()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(0))
+    }
+    
+    func testBitsIntableInt8_1()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(1))
+    }
+    
+    func testBitsIntableInt8_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int8 = bits.int8 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int8, Int8(3))
+    }
+
+    func testBitsIntableInt16_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int16 = bits.int16 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int16, Int16(3))
+    }
+    
+    func testBitsIntableInt64_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int64 = bits.int64 else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int64, Int64(3))
+    }
+    
+    func testBitsIntableInt_3()
+    {
+        var bits = Bits()
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let int = bits.int else
+        {
+            XCTFail()
+            return
+        }
+        
+        XCTAssertEqual(int, Int(3))
+    }
 }
