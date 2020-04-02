@@ -242,7 +242,7 @@ public struct Bits: MaybeDatable
     
     public mutating func pack(bytes: Data) -> Bool
     {
-        guard byteAligned else
+        guard byteAligned || buffer.count == 0 else
         {
             return false
         }
