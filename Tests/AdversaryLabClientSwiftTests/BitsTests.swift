@@ -950,7 +950,7 @@ final class BitsTests: XCTestCase
         var bits = Bits()
         let test: Data = Data(array: [0x08, 0x00])
 
-        guard bits.pack(bytes: test) else //pack doesn't add the bytes to the bits var
+        guard bits.pack(bytes: test) else
         {
             XCTFail()
             return
@@ -974,7 +974,7 @@ final class BitsTests: XCTestCase
         var bits = Bits()
         let test: Data = Data(array: [0x08, 0x00])
 
-        guard bits.pack(bytes: test) else //pack doesn't add the bytes to the bits var
+        guard bits.pack(bytes: test) else
         {
             XCTFail()
             return
@@ -991,12 +991,34 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(correct, result)
     }
     
+    func testBitsIntableInt_endianness()
+    {
+        let correct = Int(0x0800)
+        
+        var bits = Bits()
+        let test: Data = Data(array: [0x08, 0x00])
+
+        guard bits.pack(bytes: test) else
+        {
+            XCTFail()
+            return
+        }
+         
+        guard let result = bits.int else
+        {
+            XCTFail()
+            return
+        }
+                  
+        XCTAssertEqual(correct, result)
+    }
+    
     func testBits_PackUnpackBytes()
     {
         var bits = Bits()
         let test: Data = Data(array: [0x08, 0x00])
 
-        guard bits.pack(bytes: test) else //pack doesn't add the bytes to the bits var
+        guard bits.pack(bytes: test) else
         {
             XCTFail()
             return
