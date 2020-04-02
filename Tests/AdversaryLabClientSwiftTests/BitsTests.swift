@@ -945,7 +945,7 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(int, Int(3))
     }
     
-    func testBitsIntableInt_bytes()
+    func testBitsIntableInt16_bytes()
     {
         var bits = Bits()
         let test: Data = Data(array: [0x08, 0x00])
@@ -964,6 +964,26 @@ final class BitsTests: XCTestCase
         
         let result = int16.data
         
+        XCTAssertEqual(test, result)
+     }
+    
+    func testBits_PackUnpackBytes()
+    {
+        var bits = Bits()
+        let test: Data = Data(array: [0x08, 0x00])
+
+        guard bits.pack(bytes: test) else //pack doesn't add the bytes to the bits var
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let result = bits.unpack(bytes: 2) else
+        {
+            XCTFail()
+            return
+        }
+                
         XCTAssertEqual(test, result)
      }
 }
