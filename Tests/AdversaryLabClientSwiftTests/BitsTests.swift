@@ -967,6 +967,30 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(test, result)
      }
     
+    func testBitsIntableInt_bytes()
+    {
+        let correct = Data(array: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00])
+        
+        var bits = Bits()
+        let test: Data = Data(array: [0x08, 0x00])
+
+        guard bits.pack(bytes: test) else //pack doesn't add the bytes to the bits var
+        {
+            XCTFail()
+            return
+        }
+         
+        guard let int = bits.int else
+        {
+            XCTFail()
+            return
+        }
+         
+        let result = int.data
+         
+        XCTAssertEqual(correct, result)
+    }
+    
     func testBits_PackUnpackBytes()
     {
         var bits = Bits()
