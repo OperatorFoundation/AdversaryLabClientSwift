@@ -45,14 +45,14 @@ public extension EtherType {
     
     init?(data: Data) {
         print("\nforce conv \(data as! NSData)")
-        let x = data.int
+        let x = Int(data.uint16)
         print(x)
         self.init(rawValue: x)
     }
     
     var data: Data? {
         let x = self.rawValue
-        return Data(int: x)
+        return Data(uint16: UInt16(x))
     }
     
 }
