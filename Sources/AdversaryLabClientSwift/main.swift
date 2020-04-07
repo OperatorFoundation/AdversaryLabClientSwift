@@ -163,7 +163,7 @@ class State
                     
                     switch epacket.type {
                     case .IPv4:
-                                                if let ippacket = IPv4(data: epacket.payload){
+                        if let ippacket = IPv4(data: epacket.payload){
                             //parse TCP
                             
                         } else {

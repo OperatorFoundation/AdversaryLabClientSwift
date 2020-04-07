@@ -44,13 +44,15 @@ public enum EtherType: Int {
 public extension EtherType {
     
     init?(data: Data) {
-        print("\nforce conv \(data as! NSData)")
+        DatableConfig.endianess = .big
+        //print("\nforce conv \(data as! NSData)")
         let x = Int(data.uint16)
         print(x)
         self.init(rawValue: x)
     }
     
     var data: Data? {
+        DatableConfig.endianess = .big
         let x = self.rawValue
         return Data(uint16: UInt16(x))
     }
@@ -61,7 +63,7 @@ public struct IPv4
 {
     //http://www.networksorcery.com/enp/protocol/ip.htm
     
-    public let version: Data //4 bits
+    public let version: Bits //4 bits
     public let IHL: Data //4 bits
     public let DSCP: Data //6 bits
     public let ECN: Data //2 bits
@@ -220,7 +222,6 @@ extension Ethernet: MaybeDatable
         } else if typeOrTagPrefix[0] == 0x08 && typeOrTagPrefix[1] == 0x00
         {
             //self.type = Ethertype(data: typeOrTagPrefix)
-            print("\n convert to ethertype")
             guard let tempType = EtherType(data: typeOrTagPrefix) else {
                 print("\n2 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
                 //self.type = nil
@@ -246,10 +247,7 @@ extension Ethernet: MaybeDatable
         
         guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
         self.payload = payload
-//        print("\npayload\n: ", terminator: "")
-//        for byte in self.payload{
-//            print(String(byte, radix:16), terminator: ":")
-//        }
+
         
         
  
@@ -276,13 +274,14 @@ extension Ethernet: MaybeDatable
 extension IPv4: MaybeDatable
 {
     public init?(data: Data) {
-        print("init")
+        print("start parsing IPv4")
         DatableConfig.endianess = .little
         var bits = Bits(data: data)
         
         guard let version = bits.unpack(bits: 4) else { return nil }
-        
 
+        self.version = version
+        print("\nver: \(version.uint16 as! UInt16)", terminator: "\n")
         
         guard let IHL = bits.unpack(bits: 4) else { return nil }
         
@@ -301,6 +300,7 @@ extension IPv4: MaybeDatable
         guard let sourceAddress = bits.unpack(bytes: 4) else { return nil }
         guard let destinationAddress = bits.unpack(bytes: 4) else { return nil }
         
+        print("start parse checks")
         //options?
         if IHL.int ?? 0 > 5{
             //fix, add code to parse options field
@@ -313,11 +313,9 @@ extension IPv4: MaybeDatable
         guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
         
         
-        self.version = version.buffer
-        print("\nver: ", terminator: "")
-        for byte in self.version {
-            print(String(format: "%02x", byte), terminator: ":")
-        }
+//        self.version = version
+//        print("\nver: \(version)", terminator: "")
+
         
         self.IHL = IHL.data
         print("\nIHL: ", terminator: "")
@@ -410,7 +408,7 @@ extension IPv4: MaybeDatable
     public var data: Data {
         DatableConfig.endianess = .little
         var result = Data()
-        result.append(version)
+        result.append(version.data)
         result.append(IHL)
         result.append(DSCP)
         result.append(ECN)
