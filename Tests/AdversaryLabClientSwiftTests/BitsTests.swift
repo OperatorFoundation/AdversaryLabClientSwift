@@ -1032,4 +1032,34 @@ final class BitsTests: XCTestCase
                 
         XCTAssertEqual(test, result)
      }
+    
+    func testBits_UnpackBitsThenBytes()
+    {
+        let correct = Data(array: [0b01010101])
+        
+        var bits = Bits()
+        let input: Data = Data(array: [0b10101010, 0b11111111])
+
+        guard bits.pack(bytes: input) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let _ = bits.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let result = bits.unpack(bytes: 1) else
+        {
+            XCTFail()
+            return
+        }
+                
+        print("Results: \(String(result[0], radix: 2)) \(String(result[0], radix: 2))")
+        
+        XCTAssertEqual(result, correct)
+     }
 }

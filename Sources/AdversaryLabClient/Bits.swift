@@ -75,6 +75,8 @@ public struct SimpleBits: MaybeDatable
 
     public mutating func pack(bits: SimpleBits) -> Bool
     {
+        guard bits.count > 0 else {return true}
+        
         var mbits = bits
         
         if count + mbits.count > 8
@@ -115,6 +117,8 @@ public struct SimpleBits: MaybeDatable
 
     public mutating func unpack(bits: Int) -> SimpleBits?
     {
+        guard bits > 0 else {return nil}
+        
         if bits > count
         {
             return nil
@@ -198,6 +202,14 @@ public struct Bits: MaybeDatable
             return buffer.count > 0 && leftover == nil
         }
     }
+    
+    var isEmpty: Bool
+    {
+        get
+        {
+            return buffer.count == 0 && leftover == nil
+        }
+    }
 
     public init()
     {
@@ -242,30 +254,43 @@ public struct Bits: MaybeDatable
     
     public mutating func pack(bytes: Data) -> Bool
     {
-        guard byteAligned || buffer.count == 0 else
-        {
-            return false
-        }
+        guard bytes.count > 0 else {return true}
         
-        buffer.append(bytes)
-        return true
+        if byteAligned || isEmpty
+        {
+            buffer.append(bytes)
+            return true
+        }
+        else
+        {
+            let bits = Bits(data: bytes)
+            guard pack(bits: bits) else {return false}
+            
+            return true
+        }
     }
     
     public mutating func unpack(bytes: Int) -> Data?
     {
-        guard byteAligned else
-        {
-            return nil
-        }
+        guard bytes > 0 else {return nil}
         
-        guard let (result, rest) = splitData(buffer, bytes) else
+        if byteAligned
         {
-            return nil
+            guard let (result, rest) = splitData(buffer, bytes) else
+            {
+                return nil
+            }
+            
+            buffer = rest
+            leftover = nil
+            return result
         }
-        
-        buffer = rest
-        leftover = nil
-        return result
+        else
+        {
+            let bitsNeeded = bytes * 8
+            guard var bits = unpack(bits: bitsNeeded) else {return nil}
+            return bits.unpack(bytes: bytes)
+        }
     }
 
     public mutating func pack(bit: UInt8) -> Bool
@@ -279,6 +304,8 @@ public struct Bits: MaybeDatable
     
     public mutating func pack(bits: Bits) -> Bool
     {
+        guard bits.count > 0 else {return true}
+        
         // Case 1 - we have just bytes
         if byteAligned
         {
@@ -461,8 +488,15 @@ public struct Bits: MaybeDatable
         return bits.unpackBit()
     }
     
+    private mutating func clear()
+    {
+        buffer = Data()
+        leftover = nil
+    }
+    
     public mutating func unpack(bits: Int) -> Bits?
     {
+        guard bits > 0 else {return nil}
         guard bits <= count else { return nil }
 
         // Case 1 - we have just bytes
@@ -497,7 +531,13 @@ public struct Bits: MaybeDatable
                     return nil
                 }
                 
-                leftover = bytebits
+                let saved = buffer
+                guard leftover == nil else {return nil}
+                
+                clear()
+                
+                guard pack(bits: Bits(data: nil, bits: bytebits)) else {return nil}
+                guard pack(bytes: saved) else {return nil}
                 
                 return Bits(data: nil, bits: result)
             }
@@ -560,6 +600,7 @@ public struct Bits: MaybeDatable
                 // This decomposes to Case 1, followed by recombining the leftover bits
                 
                 // Temporarily remove the bits portion
+                let saved = leftover
                 leftover = nil
 
                 // Execute Case 1
@@ -569,7 +610,7 @@ public struct Bits: MaybeDatable
                 }
                 
                 // Repack the bits portion
-                guard pack(bits: Bits(data: nil, bits: leftover)) else
+                guard pack(bits: Bits(data: nil, bits: saved)) else
                 {
                     return nil
                 }
