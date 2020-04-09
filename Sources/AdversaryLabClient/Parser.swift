@@ -267,7 +267,8 @@ extension IPv4: MaybeDatable
         var bits = Bits(data: data)
         
         guard let version = bits.unpack(bits: 4) else { return nil }
-        self.version = version.uint8!
+        guard let versionUint8 = version.uint8 else {return nil}
+        self.version = versionUint8
         print("\nVersion: ", terminator: "")
         print(String(format: "%02x", self.version), terminator: "")
         
