@@ -4,6 +4,52 @@ import XCTest
 final class BitsTests: XCTestCase
 {
     // SimpleBits tests
+    func testSimpleBits_FailableInit()
+    {
+        // Should not fail
+        let sb1 = SimpleBits()
+        XCTAssertNotNil(sb1)
+
+        // Should not fail
+        let sb2 = SimpleBits(data: Data(array: []))
+        XCTAssertNotNil(sb2)
+        
+        // Should not fail
+        let sb3 = SimpleBits(data: Data(array: [0x0A]))
+        XCTAssertNotNil(sb3)
+
+        // Should fail
+        let sb4 = SimpleBits(data: Data(array: [0x0A, 0x0B]))
+        XCTAssertNil(sb4)        
+    }
+    
+    func testSimpleBits_Data()
+    {
+        let sb1 = SimpleBits()
+        let data1 = sb1.data
+        XCTAssertNotNil(data1)
+        XCTAssertEqual(data1.count, 0)
+        
+        var sb2 = SimpleBits()
+        guard sb2.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        let data2 = sb2.data
+        XCTAssertNotNil(data2)
+        XCTAssertEqual(data2.count, 1)
+
+        guard let sb3 = SimpleBits(data: Data(array: [0x0A])) else
+        {
+            XCTFail()
+            return
+        }
+        let data3 = sb3.data
+        XCTAssertNotNil(data3)
+        XCTAssertEqual(data3.count, 1)
+    }
+    
     func testSimpleBitsUnpackEmpty()
     {
         var bits = SimpleBits()

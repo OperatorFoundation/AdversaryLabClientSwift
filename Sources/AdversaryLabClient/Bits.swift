@@ -30,27 +30,47 @@ public struct SimpleBits: MaybeDatable
     
     public init?(data: Data)
     {
-        guard data.count == 1 else
+        if data.count == 0
         {
-            return nil
+            buffer = 0
+            count = 0
         }
-        
-        buffer = data[0]
-        count = 8
+        else
+        {
+            guard data.count == 1 else
+            {
+                return nil
+            }
+            
+            buffer = data[0]
+            count = 8
+        }
     }
  
     public var data: Data
     {
         get
         {
-            if byteAligned
+            if isEmpty
+            {
+                return Data()
+            }
+            else if byteAligned
             {
                 return Data(array: [buffer])
             }
             else
             {
-                return Data()
+                return rightAlign()
             }
+        }
+    }
+    
+    var isEmpty: Bool
+    {
+        get
+        {
+            return count == 0
         }
     }
     
@@ -171,6 +191,28 @@ public struct SimpleBits: MaybeDatable
         let offset: UInt8 = UInt8(7) - UInt8(index)
         return (buffer & (1 << offset)) >> offset
     }
+    
+    private func rightAlign() -> Data
+    {
+        assert(!isEmpty)
+        assert(count < 8)
+                
+        let neededForAlignment = 8 - count
+        
+        var aligned = SimpleBits()
+        
+        for _ in 0..<neededForAlignment
+        {
+            let success = aligned.pack(bit: 0)
+            assert(success)
+        }
+        
+        let success = aligned.pack(bits: self)
+        assert(success)
+                
+        return aligned.data
+    }
+
 }
 
 // Bits allows for packing and unpacking of both bytes and bits in relation to an array of bytes of arbitrary length
