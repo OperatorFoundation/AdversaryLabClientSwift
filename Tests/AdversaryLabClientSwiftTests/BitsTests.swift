@@ -50,12 +50,102 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(data3.count, 1)
     }
     
+    func testSimpleBits_Overpack()
+    {
+        var sb = SimpleBits()
+        
+        for _ in 0..<8
+        {
+            // Should not fail
+            XCTAssertTrue(sb.pack(bit: 0))
+        }
+        
+        // Should fail
+        XCTAssertFalse(sb.pack(bit: 0))
+
+        // Should not fail
+        var sb2 = SimpleBits()
+        XCTAssertTrue(sb2.pack(bit: 0))
+        
+        // Should fail
+        XCTAssertFalse(sb.pack(bits: sb2))
+    }
+    
+    func testSimpleBits_Badpack()
+    {
+        var sb = SimpleBits()
+                
+        // Should fail
+        XCTAssertFalse(sb.pack(bit: 12))
+    }
+
+    func testSimpleBits_Set()
+    {
+        guard var sb = SimpleBits(data: Data(array: [0xCC])) else
+        {
+            XCTFail()
+            return
+        }
+                
+        // Should not fail
+        XCTAssertTrue(sb.set(bit: 0, index: 0))
+        XCTAssertTrue(sb.set(bit: 1, index: 1))
+        XCTAssertTrue(sb.set(bit: 0, index: 2))
+        XCTAssertTrue(sb.set(bit: 1, index: 3))
+        XCTAssertTrue(sb.set(bit: 0, index: 4))
+        XCTAssertTrue(sb.set(bit: 1, index: 5))
+        XCTAssertTrue(sb.set(bit: 0, index: 6))
+        XCTAssertTrue(sb.set(bit: 1, index: 7))
+        
+        // Should fail
+        XCTAssertFalse(sb.set(bit: 0, index: -1))
+        XCTAssertFalse(sb.set(bit: 1, index: 8))
+        XCTAssertFalse(sb.set(bit: 0, index: -8))
+        XCTAssertFalse(sb.set(bit: 1, index: 500))
+        XCTAssertFalse(sb.set(bit: 2, index: 4))
+        XCTAssertFalse(sb.set(bit: 255, index: 5))
+        XCTAssertFalse(sb.set(bit: 2, index: -1))
+        XCTAssertFalse(sb.set(bit: 255, index: 255))
+    }
+    
+    func testSimpleBits_Badunpack()
+    {
+        var sb = SimpleBits(data: Data(array: [0x3B]))
+                
+        // Should fail
+        XCTAssertNil(sb?.unpack(bits: 0))
+        
+        // Should fail
+        XCTAssertNil(sb?.unpack(bits: -1))
+        
+        // Should fail
+        XCTAssertNil(sb?.unpack(bits: 9))
+        
+        // Should fail
+        XCTAssertNil(sb?.unpack(bits: 576))
+        
+        // Should fail
+        XCTAssertNil(sb?.unpack(bits: -576))
+    }
+    
+    func testSimpleBits_Emptypack()
+    {
+        var sb = SimpleBits()
+        let sb2 = SimpleBits()
+                
+        // Should not fail
+        XCTAssertTrue(sb.pack(bits: sb2))
+    }
+    
     func testSimpleBitsUnpackEmpty()
     {
         var bits = SimpleBits()
         
         let bit = bits.unpackBit()
         XCTAssertNil(bit)
+        
+        let bs = bits.unpack(bits: 1)
+        XCTAssertNil(bs)
     }
     
     func testSimpleBitsUnpackOnes()

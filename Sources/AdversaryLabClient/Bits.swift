@@ -106,15 +106,14 @@ public struct SimpleBits: MaybeDatable
         
         for _ in 0..<mbits.count
         {
+            // This should not actually be able to fail.
             guard let bit = mbits.unpackBit() else
             {
                 return false
             }
             
-            if !pack(bit: bit)
-            {
-                return false
-            }
+            let success = pack(bit: bit)
+            assert(success)
         }
         
         return true
@@ -148,15 +147,14 @@ public struct SimpleBits: MaybeDatable
         
         for _ in 0..<bits
         {
+            // This should not actually be able to fail.
             guard let bit = unpackBit() else
             {
                 return nil
             }
             
-            if !result.pack(bit: bit)
-            {
-                return nil
-            }
+            let success = result.pack(bit: bit)
+            assert(success)
         }
         
         return result
