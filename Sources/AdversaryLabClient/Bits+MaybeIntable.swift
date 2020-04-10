@@ -12,7 +12,7 @@ extension Bits: MaybeIntable
 {
     func rightAlign(bitsNeeded: Int) -> Data?
     {
-        guard bitsNeeded <= count else {return nil}
+        guard bitsNeeded >= count else {return nil}
         guard bitsNeeded % 8 == 0 else {return nil}
         let bytesNeeded = bitsNeeded / 8
         

@@ -128,7 +128,6 @@ public struct SimpleBits: MaybeDatable
         
         for _ in 0..<bits
         {
-            print(index)
             guard let bit = unpackBit() else
             {
                 return nil
@@ -406,7 +405,7 @@ public struct Bits: MaybeDatable
                     return false
                 }
                 
-                guard pack(bits: bits) else {
+                guard pack(bits: mbits) else {
                     return false
                 }
                 

@@ -1062,4 +1062,78 @@ final class BitsTests: XCTestCase
         
         XCTAssertEqual(result, correct)
      }
+    
+    func testBits_UnpackBytesUInt16()
+    {
+        let correct: UInt16 = 257
+        
+        var bits = Bits()
+        let input: Data = Data(array: [0x01, 0x01])
+
+        guard bits.pack(bytes: input) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard let unpacked = bits.unpack(bytes: 2) else
+        {
+            XCTFail()
+            return
+        }
+        
+        let result = unpacked.uint16
+                        
+        XCTAssertEqual(result, correct)
+     }
+    
+    func testBitsIntableUInt16_withLeftovers()
+    {
+        let correct: UInt16 = 4056
+        
+        var bits = Bits()
+        let test: Data = Data(array: [0x7e])
+        
+        guard bits.pack(bytes: test) else
+        {
+            XCTFail()
+            return
+        }
+        //11000000
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+       
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+       
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard let uint16 = bits.uint16 else //fails here
+        {
+            XCTFail()
+            return
+        }
+       
+        XCTAssertEqual(uint16, correct)
+    }
 }
