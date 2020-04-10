@@ -144,7 +144,7 @@ class State
             {
                 
                 debug_packetCount += 1
-                print("\n\nP# \(debug_packetCount) - bytes \(bytes.count): \n")
+                print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 
                 var count = 0
                 for byte in bytes{
@@ -157,6 +157,7 @@ class State
                         print("")
                     }
                 }
+                print("\n")
                 
                 if let epacket = Ethernet(data: Data(bytes)){
                     print("\nethernet parse success\n")
