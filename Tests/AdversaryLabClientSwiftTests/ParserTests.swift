@@ -94,4 +94,151 @@ final class ParserTests: XCTestCase
         
         XCTAssertEqual(correct, result)
     }
+    
+    func testEthertype_Data_getter(){
+        //fix / verify
+        let correct = Data(array: [0x08, 0x00])
+        let ET = EtherType(rawValue: 0x0800)
+        let result = ET?.data
+        
+        XCTAssertEqual(correct, result)
+    }
+    
+    
+    func testIPVersionInit(){
+        //fix /verify
+        var bits = Bits()
+        let correct = IPversion(rawValue: 0x04)
+        
+        guard bits.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard bits.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        let result = IPversion(bits: bits)
+        
+        XCTAssertEqual(correct, result)
+        
+    }
+    
+    func testIPVersionBits(){
+        //fix /verify
+        var correct = Bits()
+        
+        guard correct.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+
+        guard correct.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard correct.pack(bit: 0) else
+        {
+            XCTFail()
+            return
+        }
+        
+        let ipv = IPversion(rawValue: 0x04)
+        let result = ipv?.bits?.uint
+        
+        XCTAssertEqual(correct.uint, result)
+    }
+    
+    func testEthernetInit_(){
+        //fix / verify
+        //sample source: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=tcp-ethereal-file1.trace
+        //packet #4
+        let packetBytes = Data(array: [
+         0x00, 0x05, 0x9a, 0x3c, 0x78, 0x00, 0x00, 0x0d, 0x88, 0x40, 0xdf, 0x1d, 0x08, 0x00, 0x45, 0x00,
+         0x00, 0x30, 0x00, 0x00, 0x40, 0x00, 0x34, 0x06, 0x2d, 0xc9, 0x80, 0x77, 0xf5, 0x0c, 0x83, 0xd4,
+         0x1f, 0xa7, 0x00, 0x50, 0x08, 0x30, 0x3d, 0xe4, 0xa9, 0x33, 0x99, 0x5f, 0xcf, 0x79, 0x70, 0x12,
+         0x05, 0xb4, 0x0b, 0xeb, 0x00, 0x00, 0x02, 0x04, 0x05, 0xb4, 0x01, 0x01, 0x04, 0x02])
+        
+        let correctMACsource = Data(array: [0x00, 0x0d, 0x88, 0x40, 0xdf, 0x1d])
+        let correctMACdestination = Data(array: [0x00, 0x05, 0x9a, 0x3c, 0x78, 0x00])
+        let correctType = EtherType(rawValue: 0x0800) //IPv4
+        //let correctTag1 = Data(array: [])
+        //let correctTag2 = Data(array: [])
+        let correctPayload = Data(array: [0x45, 0x00, 0x00, 0x30, 0x00, 0x00, 0x40, 0x00, 0x34, 0x06,
+                                          0x2d, 0xc9, 0x80, 0x77, 0xf5, 0x0c, 0x83, 0xd4, 0x1f, 0xa7,
+                                          0x00, 0x50, 0x08, 0x30, 0x3d, 0xe4, 0xa9, 0x33, 0x99, 0x5f,
+                                          0xcf, 0x79, 0x70, 0x12, 0x05, 0xb4, 0x0b, 0xeb, 0x00, 0x00,
+                                          0x02, 0x04, 0x05, 0xb4, 0x01, 0x01, 0x04, 0x02])
+        
+        let correctIPv4version: UInt8 = 0x04
+        let correctIPv4IHL: UInt8 = 0x05
+        let correctIPv4DSCP: UInt8 = 0x00
+        let correctIPv4ECN: UInt8 = 0x00 //(48)
+        let correctIPv4length: UInt16 = 0x0030
+        let correctIPv4identification: UInt16 = 0x0000
+        let correctIPv4flags: UInt8 = 0b010 //UInt8 3 bits
+        let correctIPv4fragmentOffset: UInt16 = 0x0000
+        let correctIPv4ttl: UInt8 = 0x34 //(52)
+        let correctIPv4protocolNumber: UInt8 = 0x06 //tcp
+        let correctIPv4checksum: UInt16 = 0x2dc9
+        let correctIPv4sourceAddress: Data = Data(array:[0x80, 0x77, 0xf5, 0x0c]) //128.119.245.12
+        let correctIPv4destinationAddress: Data = Data(array:[0x83, 0xd4, 0x1f, 0xa7]) //131.212.31.167
+        let correctIPv4options: Data? = nil
+        let correctIPv4payload: Data = Data(array:[0x00, 0x50, 0x08, 0x30, 0x3d, 0xe4, 0xa9, 0x33, 0x99, 0x5f,
+                                                   0xcf, 0x79, 0x70, 0x12, 0x05, 0xb4, 0x0b, 0xeb, 0x00, 0x00,
+                                                   0x02, 0x04, 0x05, 0xb4, 0x01, 0x01, 0x04, 0x02])
+        
+        if let epacket = Ethernet(data: packetBytes){
+            
+            XCTAssertEqual(epacket.MACDestination, correctMACdestination)
+            XCTAssertEqual(epacket.MACSource, correctMACsource)
+            XCTAssertEqual(epacket.type, correctType)
+            XCTAssertEqual(epacket.payload, correctPayload)
+            XCTAssertNil(epacket.tag1)
+            XCTAssertNil(epacket.tag2)
+
+            if let IPv4part = IPv4(data: epacket.payload){
+                XCTAssertEqual(IPv4part.version, correctIPv4version)
+                XCTAssertEqual(IPv4part.IHL, correctIPv4IHL)
+                XCTAssertEqual(IPv4part.DSCP, correctIPv4DSCP)
+                XCTAssertEqual(IPv4part.ECN, correctIPv4ECN)
+                XCTAssertEqual(IPv4part.length, correctIPv4length)
+                XCTAssertEqual(IPv4part.identification, correctIPv4identification)
+                XCTAssertEqual(IPv4part.flags, correctIPv4flags)
+                XCTAssertEqual(IPv4part.fragmentOffset, correctIPv4fragmentOffset)
+                XCTAssertEqual(IPv4part.ttl, correctIPv4ttl)
+                XCTAssertEqual(IPv4part.protocolNumber, correctIPv4protocolNumber)
+                XCTAssertEqual(IPv4part.checksum, correctIPv4checksum)
+                XCTAssertEqual(IPv4part.sourceAddress, correctIPv4sourceAddress)
+                XCTAssertEqual(IPv4part.destinationAddress, correctIPv4destinationAddress)
+                XCTAssertEqual(IPv4part.options, correctIPv4options)
+                XCTAssertEqual(IPv4part.payload, correctIPv4payload)
+                
+            }else {
+                XCTFail()
+                return
+            }
+            
+        } else {
+            XCTFail()
+            return
+        }
+        
+    }
+    
+
+    
 }

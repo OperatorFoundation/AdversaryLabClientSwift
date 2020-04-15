@@ -100,10 +100,10 @@ extension IPversion {
 public enum IPprotocolNumber: Int {
      //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
      case ICMP = 0x01
-     case TCP = 0x06 //priority
-     case UDP = 0x11
+     case TCP = 0x06 //first
+     case UDP = 0x11 //second
      case RDP = 0x1B
-     case IPv6 = 0x29
+     case IPv6 = 0x29 //third
      case L2TP = 0x73
      case SCTP = 0x84
 }
