@@ -1272,4 +1272,155 @@ final class BitsTests: XCTestCase
        
         XCTAssertEqual(uint16, correct)
     }
+    
+    func testBits__()
+    {
+        //offsetReservedFlags: 0x8018 - 0b1000 000 0 0 0 0   1 1   0 0 0
+        //                                 a    b  c d e f   g h   i j k
+
+        let input: Data = Data(array: [0x80, 0x18])
+        var toUnpack = Bits(data: input)
+      
+        guard let a = toUnpack.unpack(bits: 4) else
+        {
+            XCTFail()
+            return
+        }
+        guard let aUint8 = a.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(aUint8, 0b1000)
+        
+        
+        guard let b = toUnpack.unpack(bits: 3) else
+        {
+            XCTFail()
+            return
+        }
+        guard let bUint8 = b.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(bUint8, 0b000)
+        
+        
+        guard let c = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let cUint8 = c.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(cUint8, 0b0)
+        
+        guard let d = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let dUint8 = d.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(dUint8, 0b0)
+        
+        guard let e = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let eUint8 = e.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(eUint8, 0b0)
+        
+        guard let f = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let fUint8 = f.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(fUint8, 0b0)
+        
+        
+        
+        
+        guard let g = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let gUint8 = g.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(gUint8, 0b1)
+        
+        guard let h = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let hUint8 = h.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(hUint8, 0b1)
+        
+        
+        
+        guard let i = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let iUint8 = i.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(iUint8, 0b0)
+        
+        guard let j = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let jUint8 = j.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(jUint8, 0b0)
+        
+        guard let k = toUnpack.unpack(bits: 1) else
+        {
+            XCTFail()
+            return
+        }
+        guard let kUint8 = k.uint8 else {
+            XCTFail()
+            return
+            
+        }
+        XCTAssertEqual(kUint8, 0b0)
+        
+    }
+    
+    
 }

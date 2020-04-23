@@ -189,7 +189,10 @@ final class ParserTests: XCTestCase
         let correctIPv4ECN: UInt8 = 0x00 //(48)
         let correctIPv4length: UInt16 = 0x0030
         let correctIPv4identification: UInt16 = 0x0000
-        let correctIPv4flags: UInt8 = 0b010 //UInt8 3 bits
+        //let correctIPv4flags: UInt8 = 0b010 //UInt8 3 bits
+        let correctIPv4reservedBit: UInt8 = 0b0
+        let correctIPv4dontFragment: UInt8 = 0b1
+        let correctIPv4moreFragments: UInt8 = 0b0
         let correctIPv4fragmentOffset: UInt16 = 0x0000
         let correctIPv4ttl: UInt8 = 0x34 //(52)
         let correctIPv4protocolNumber: UInt8 = 0x06 //tcp
@@ -217,7 +220,9 @@ final class ParserTests: XCTestCase
                 XCTAssertEqual(IPv4part.ECN, correctIPv4ECN)
                 XCTAssertEqual(IPv4part.length, correctIPv4length)
                 XCTAssertEqual(IPv4part.identification, correctIPv4identification)
-                XCTAssertEqual(IPv4part.flags, correctIPv4flags)
+                XCTAssertEqual(IPv4part.reservedBit, correctIPv4reservedBit)
+                XCTAssertEqual(IPv4part.dontFragment, correctIPv4dontFragment)
+                XCTAssertEqual(IPv4part.moreFragments, correctIPv4moreFragments)
                 XCTAssertEqual(IPv4part.fragmentOffset, correctIPv4fragmentOffset)
                 XCTAssertEqual(IPv4part.ttl, correctIPv4ttl)
                 XCTAssertEqual(IPv4part.protocolNumber, correctIPv4protocolNumber)
@@ -239,6 +244,15 @@ final class ParserTests: XCTestCase
         
     }
     
-
+    func testEthernetInit_VLANtag(){
+        //fix / verify
+    }
+    
+    func testEthernetInit_VLANdoubleTag(){
+        //fix / verify
+    }
+    
+    
+    
     
 }

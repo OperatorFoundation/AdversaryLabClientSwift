@@ -165,7 +165,16 @@ class State
                     switch epacket.type {
                     case .IPv4:
                         if let ippacket = IPv4(data: epacket.payload){
-                            //parse TCP
+                            print("\nIP parse success!\n")
+                            
+                            if ippacket.protocolNumber == 0x06 {
+                                if let tcpSegment = TCP(data: ippacket.payload){
+                                     print("\nTCP parse success!\n")
+                                     
+                                }else{
+                                     print("\nno parse TCP\n")
+                                 }
+                            }
                             
                         } else {
                             print("\nno parse IPv4\n")
@@ -181,11 +190,11 @@ class State
                     print("\nethernet parse FAIL\n")
                 }
                 
-                if let packet = TCP(data: Data(bytes))
-                {
-                    dest.enqueue(packet)
-                    
-                }
+//                if let packet = TCP(data: Data(bytes))
+//                {
+//                    dest.enqueue(packet)
+//                    
+//                }
             }
         }
     }

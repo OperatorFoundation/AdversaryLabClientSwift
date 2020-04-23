@@ -67,7 +67,9 @@ public struct IPv4
     public let ECN: UInt8 //2 bits
     public let length: UInt16 //2 bytes   --number
     public let identification: UInt16 //2 bytes
-    public let flags: UInt8 //3 bits
+    public let reservedBit: UInt8
+    public let dontFragment: UInt8
+    public let moreFragments: UInt8
     public let fragmentOffset: UInt16 //13 bits   --number
     public let ttl: UInt8 //1 byte   --number
     public let protocolNumber: UInt8 //1 byte
@@ -128,27 +130,26 @@ public struct TCP
     public let sourcePort: UInt16
     public let destinationPort: UInt16
     public let sequenceNumber: Data
-    public let acknowledgementNumber: Data?
+    public let acknowledgementNumber: Data
     public let offset: UInt8
-    public let ns: Bool
-    public let cwr: Bool
-    public let ece: Bool
-    public let urg: Bool
-    public let ack: Bool
-    public let psh: Bool
-    public let rst: Bool
-    public let syn: Bool
-    public let fin: Bool
-    public let windowSize: Data
+    public let reserved: UInt8
+    public let ns: UInt8 //Bool
+    public let cwr: UInt8 //Bool
+    public let ece: UInt8 //Bool
+    public let urg: UInt8 //Bool
+    public let ack: UInt8 //Bool
+    public let psh: UInt8 //Bool
+    public let rst: UInt8 //Bool
+    public let syn: UInt8 //Bool
+    public let fin: UInt8 //Bool
+    public let windowSize: UInt16
     public let checksum: UInt16
-    public let urgentPointeR: UInt16?
+    //public let urgentPointer: UInt16
+    public let urgentPointer: UInt16
     public let options: Data?
     public let payload: Data?
     
-    public init?(data: Data)
-    {
-        return nil
-    }
+
 }
 
 extension Ethernet: MaybeDatable
@@ -291,26 +292,19 @@ extension IPv4: MaybeDatable
         
         guard let DSCPECN = bits.unpack(bytes: 1) else { return nil }
         var DSCPECNbits = Bits(data: DSCPECN)
-        guard let DSCP = DSCPECNbits.unpack(bits: 6) else {
-            print("dscp unpack 6 bits fail")
-            return nil }
-        guard let DSCPUint8 = DSCP.uint8 else {
-            print("dscp uint8 fail")
-            return nil}
+        guard let DSCP = DSCPECNbits.unpack(bits: 6) else { return nil }
+        guard let DSCPUint8 = DSCP.uint8 else {return nil}
         self.DSCP = DSCPUint8
         print("DSCP: 0x" + String(format: "%02x", self.DSCP))
         
         guard let ECN = DSCPECNbits.unpack(bits: 2) else { return nil }
-        guard let ECNUint8 = ECN.uint8 else {return nil}
+        guard let ECNUint8 = ECN.uint8 else { return nil }
         self.ECN = ECNUint8
         print("ECN: 0x" + String(format: "%02x", self.ECN))
         
         
         DatableConfig.endianess = .big
-        guard let length = bits.unpack(bytes: 2) else {
-            print("\n\nFail IPv4 length")
-            return nil
-        }
+        guard let length = bits.unpack(bytes: 2) else { return nil }
         let lengthUint16 = length.uint16
         self.length = lengthUint16
         print("Length: 0x" + String(format: "%02x", self.length) + " - 0d" + String(format: "%u", self.length))
@@ -324,10 +318,22 @@ extension IPv4: MaybeDatable
         
         guard let flagsFragmentOffset = bits.unpack(bytes: 2) else { return nil }
         var flagsFragmentOffsetbits = Bits(data: flagsFragmentOffset)
-        guard let flags = flagsFragmentOffsetbits.unpack(bits: 3) else { return nil }
-        guard let flagsUint8 = flags.uint8 else {return nil}
-        self.flags = flagsUint8
-        print("Flags: 0x" + String(format: "%02x", self.flags) + " - 0b" + String(self.flags, radix: 2))
+        
+        guard let reservedBit = flagsFragmentOffsetbits.unpack(bits: 1) else { return nil }
+        guard let dontFragment = flagsFragmentOffsetbits.unpack(bits: 1) else { return nil }
+        guard let moreFragments = flagsFragmentOffsetbits.unpack(bits: 1) else { return nil }
+        
+        guard let reservedBitUint8 = reservedBit.uint8 else {return nil}
+        guard let dontFragmentUint8 = dontFragment.uint8 else {return nil}
+        guard let moreFragmentsUint8 = moreFragments.uint8 else {return nil}
+        
+        self.reservedBit = reservedBitUint8
+        self.dontFragment = dontFragmentUint8
+        self.moreFragments = moreFragmentsUint8
+        
+        print("reservedBit: 0x" + String(format: "%02x", self.reservedBit) + " - 0b" + String(self.reservedBit, radix: 2))
+        print("dontFragment: 0x" + String(format: "%02x", self.dontFragment) + " - 0b" + String(self.dontFragment, radix: 2))
+        print("moreFragments: 0x" + String(format: "%02x", self.moreFragments) + " - 0b" + String(self.moreFragments, radix: 2))
         
         guard let fragmentOffset = flagsFragmentOffsetbits.unpack(bits: 13) else { return nil }
         guard let fragmentOffsetUint16 = fragmentOffset.uint16 else { return nil }
@@ -410,7 +416,9 @@ extension IPv4: MaybeDatable
         result.append(ECN)
         result.append(length.data)
         result.append(identification.data)
-        result.append(flags)
+        result.append(reservedBit)
+        result.append(dontFragment)
+        result.append(moreFragments)
         result.append(fragmentOffset.data)
         result.append(ttl)
         result.append(protocolNumber)
@@ -426,14 +434,269 @@ extension IPv4: MaybeDatable
 
 
 
-//
-//extension TCP: MaybeDatable
-//{
-//    init?(data: Data) {
-//        <#code#>
-//    }
-//
-//    var data: Data {
-//        <#code#>
-//    }
-//}
+
+extension TCP: MaybeDatable
+{
+    public init?(data: Data) {
+        //https://en.wikipedia.org/wiki/Transmission_Control_Protocol#TCP_segment_structure
+        //https://tools.ietf.org/html/rfc7414 - roadmap to TCP RFCs
+        /*
+        Source port - 2 bytes
+        Destination port - 2 bytes
+        Sequence Number - 4 bytes
+        Ack Number if ack set - 4 bytes
+        Data offset - 4 Bits
+        Reserved - 3 Bits
+        NS - 1 Bit
+        CWR - 1 Bit
+        ECE - 1 Bit
+        URG - 1 Bit
+        ACK - 1 Bit
+        PSH - 1 Bit
+        RST - 1 Bit
+        SYN - 1 Bit
+        FIN - 1 Bit
+        Window size - 2 bytes
+        checksum - 2 bytes
+        Urgent pointer (if URG set) - 2 bytes
+        Options (if data offset > 5. Padded at the end with "0" bytes if necessary.) (Variable 0–320 bits, divisible by 32)
+        Payload
+        
+        public let sourcePort: UInt16
+        public let destinationPort: UInt16
+        public let sequenceNumber: Data
+        public let acknowledgementNumber: Data?  //why is this optional? is it because the ACK flag must be set? but we don't know if it's junk until after it's parsed out and we're able to get to the ACK flag -- do we then set to nil
+        public let offset: UInt8
+        public let reserved: UInt8
+        public let ns: UInt8 //Bool
+        public let cwr: UInt8 //Bool
+        public let ece: UInt8 //Bool
+        public let urg: UInt8 //Bool
+        public let ack: UInt8 //Bool
+        public let psh: UInt8 //Bool
+        public let rst: UInt8 //Bool
+        public let syn: UInt8 //Bool
+        public let fin: UInt8 //Bool
+        public let windowSize: UInt16
+        public let checksum: UInt16
+        public let urgentPointer: UInt16? //optional because URG flag must be set? similar to acknum
+        public let options: Data?
+        public let payload: Data?
+        */
+        print("start parsing TCP")
+        DatableConfig.endianess = .little
+        //DatableConfig.endianess = .big
+        var bits = Bits(data: data)
+
+        DatableConfig.endianess = .big
+        guard let sourcePort = bits.unpack(bytes: 2) else { return nil }
+        let sourcePortUint16 = sourcePort.uint16
+        self.sourcePort = sourcePortUint16
+        print("sourcePort: 0x" + String(format: "%02x", self.sourcePort) + " - 0d" + String(format: "%u", self.sourcePort))
+        
+        guard let destinationPort = bits.unpack(bytes: 2) else { return nil }
+        let destinationPortUint16 = destinationPort.uint16
+        self.destinationPort = destinationPortUint16
+        print("destPort: 0x" + String(format: "%02x", self.destinationPort) + " - 0d" + String(format: "%u", self.destinationPort))
+        DatableConfig.endianess = .little
+        
+        guard let sequenceNumber = bits.unpack(bytes: 4) else { return nil }
+        self.sequenceNumber = sequenceNumber.data
+        var count = 0
+        print("SequenceNum: ", terminator: "")
+        for byte in sequenceNumber {
+            print(String(format: "%02x", byte), terminator: " ")
+            count += 1
+            if count % 8 == 0{
+                print(" ", terminator: "")
+            }
+            if count % 16 == 0{
+                print("")
+            }
+        }
+        print("")
+        
+        
+        guard let acknowledgementNumber = bits.unpack(bytes: 4) else { return nil }
+        self.acknowledgementNumber = acknowledgementNumber.data
+        count = 0
+        print("acknowledgementNum: ", terminator: "")
+        for byte in acknowledgementNumber {
+            print(String(format: "%02x", byte), terminator: " ")
+            count += 1
+            if count % 8 == 0{
+                print(" ", terminator: "")
+            }
+            if count % 16 == 0{
+                print("")
+            }
+        }
+        print("")
+        
+        DatableConfig.endianess = .big
+        guard let offsetReservedFlags = bits.unpack(bytes: 2) else { return nil }
+        var dataReservedFlagsBits = Bits(data: offsetReservedFlags)
+        let offsetReservedFlagsUint16 = offsetReservedFlags.uint16
+        print("offsetReservedFlags: 0x" + String(format: "%02x", offsetReservedFlagsUint16) + " - 0b" + String(offsetReservedFlagsUint16, radix: 2))
+        DatableConfig.endianess = .little
+        
+        guard let offset = dataReservedFlagsBits.unpack(bits: 4) else { return nil }
+        guard let offsetUint8 = offset.uint8 else {return nil}
+        self.offset = offsetUint8
+        print("Offset: 0x" + String(format: "%02x", self.offset) + " - 0b" + String(self.offset, radix: 2))
+        
+        guard let reserved = dataReservedFlagsBits.unpack(bits: 3) else { return nil }
+        guard let reservedUint8 = reserved.uint8 else {return nil}
+        self.reserved = reservedUint8
+        print("reserved: 0x" + String(format: "%02x", self.reserved) + " - 0b" + String(self.reserved, radix: 2))
+        
+        guard let ns = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let nsUint8 = ns.uint8 else {return nil}
+        self.ns = nsUint8
+        print("ns: 0x" + String(format: "%02x", self.ns) + " - 0b" + String(self.ns, radix: 2))
+        
+        guard let cwr = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let cwrUint8 = cwr.uint8 else {return nil}
+        self.cwr = cwrUint8
+        print("cwr: 0x" + String(format: "%02x", self.cwr) + " - 0b" + String(self.cwr, radix: 2))
+        
+        guard let ece = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let eceUint8 = ece.uint8 else {return nil}
+        self.ece = eceUint8
+        print("ece: 0x" + String(format: "%02x", self.ece) + " - 0b" + String(self.ece, radix: 2))
+        
+        guard let urg = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let urgUint8 = urg.uint8 else {return nil}
+        self.urg = urgUint8
+        print("urg: 0x" + String(format: "%02x", self.urg) + " - 0b" + String(self.urg, radix: 2))
+        
+        guard let ack = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let ackUint8 = ack.uint8 else {return nil}
+        self.ack = ackUint8
+        print("ack: 0x" + String(format: "%02x", self.ack) + " - 0b" + String(self.ack, radix: 2))
+        
+        guard let psh = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let pshUint8 = psh.uint8 else {return nil}
+        self.psh = pshUint8
+        print("psh: 0x" + String(format: "%02x", self.psh) + " - 0b" + String(self.psh, radix: 2))
+        
+        guard let rst = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let rstUint8 = rst.uint8 else {return nil}
+        self.rst = rstUint8
+        print("rst: 0x" + String(format: "%02x", self.rst) + " - 0b" + String(self.rst, radix: 2))
+        
+        guard let syn = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let synUint8 = syn.uint8 else {return nil}
+        self.syn = synUint8
+        print("syn: 0x" + String(format: "%02x", self.syn) + " - 0b" + String(self.syn, radix: 2))
+        
+        guard let fin = dataReservedFlagsBits.unpack(bits: 1) else { return nil }
+        guard let finUint8 = fin.uint8 else {return nil}
+        self.fin = finUint8
+        print("fin: 0x" + String(format: "%02x", self.fin) + " - 0b" + String(self.fin, radix: 2))
+        
+        
+        DatableConfig.endianess = .big
+        guard let windowSize = bits.unpack(bytes: 2) else { return nil }
+        let windowSizeUint16 = windowSize.uint16
+        self.windowSize = windowSizeUint16
+        print("windowSize: 0x" + String(format: "%02x", self.windowSize) + " - 0d" + String(format: "%u", self.windowSize))
+        
+        guard let checksum = bits.unpack(bytes: 2) else { return nil }
+        let checksumUint16 = checksum.uint16
+        self.checksum = checksumUint16
+        print("checksum: 0x" + String(format: "%02x", self.checksum) + " - 0d" + String(format: "%u", self.checksum))
+        
+        guard let urgentPointer = bits.unpack(bytes: 2) else { return nil }
+        let urgentPointerUint16 = urgentPointer.uint16
+        self.urgentPointer = urgentPointerUint16
+        print("urgentPointer: 0x" + String(format: "%02x", self.urgentPointer) + " - 0d" + String(format: "%u", self.urgentPointer))
+            
+        DatableConfig.endianess = .little
+        
+        
+        if offsetUint8  > 5 && offsetUint8 < 16 {
+            let bytesToRead = Int((self.offset - 5) * 4)
+            guard let options = bits.unpack(bytes: bytesToRead) else { return nil }
+            self.options = options.data
+            
+            var count = 0
+            print("options:")
+            for byte in options {
+                print(String(format: "%02x", byte), terminator: " ")
+                count += 1
+                if count % 8 == 0{
+                    print(" ", terminator: "")
+                }
+                if count % 16 == 0{
+                    print("")
+                }
+            }
+            print("")
+            
+            
+        } else {
+            print("options: nil")
+            self.options = nil
+        }
+        
+        
+        //payload
+        
+        if Int(bits.count/8) > 0 {
+            guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
+            
+            self.payload = payload
+            var count = 0
+            print("payload:")
+            for byte in payload {
+                print(String(format: "%02x", byte), terminator: " ")
+                count += 1
+                if count % 8 == 0{
+                    print(" ", terminator: "")
+                }
+                if count % 16 == 0{
+                    print("")
+                }
+            }
+        } else {
+            print("payload: nil")
+            self.payload = nil
+        }
+            
+
+        
+    }
+
+   public var data: Data {
+        DatableConfig.endianess = .little
+        var result = Data()
+        result.append(sourcePort.data)
+        result.append(destinationPort.data)
+        result.append(sequenceNumber.data)
+        result.append(acknowledgementNumber.data ?? 0x00.data) //fix
+        result.append(offset)
+        result.append(reserved)
+        result.append(ns)
+        result.append(cwr)
+        result.append(ece)
+        result.append(urg)
+        result.append(ack)
+        result.append(psh)
+        result.append(rst)
+        result.append(syn)
+        result.append(fin)
+        result.append(windowSize.data)
+        result.append(checksum.data)
+        result.append(urgentPointer.data)
+//        if let unwrappedUrgentPointer = urgentPointer{
+//            result.append(unwrappedUrgentPointer.data)
+//        } else {
+//            result.append(0x00.data)
+//        }
+        result.append(options ?? 0x00.data) //fix
+        result.append(payload ?? 0x00.data) //fix
+        
+        return result
+    }
+}
