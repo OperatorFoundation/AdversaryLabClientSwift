@@ -38,19 +38,6 @@ final class ParserTests: XCTestCase
         XCTAssertEqual(correct, result)
     }
     
-    func testDatable_endianness3()
-    {
-        DatableConfig.endianess = .little
-
-        let correct: Int = 0x0800
-        
-        let data = Data(array: [0x08, 0x00])
-        
-        let result = data.int
-        
-        XCTAssertEqual(correct, result)
-    }
-
     func testDatable_endianness4()
     {
         DatableConfig.endianess = .big
@@ -162,7 +149,7 @@ final class ParserTests: XCTestCase
         XCTAssertEqual(correct.uint, result)
     }
     
-    func testEthernetInit_(){
+    func testEthernetInit(){
         //fix / verify
         //sample source: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=tcp-ethereal-file1.trace
         //packet #4
@@ -238,7 +225,4 @@ final class ParserTests: XCTestCase
         }
         
     }
-    
-
-    
 }
