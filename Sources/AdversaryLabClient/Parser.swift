@@ -8,18 +8,31 @@
 import Foundation
 import Datable
 
-public typealias UInt2 = UInt8
-public typealias UInt3 = UInt8
-public typealias UInt4 = UInt8
-public typealias UInt5 = UInt8
-public typealias UInt6 = UInt8
-public typealias UInt7 = UInt8
+//public typealias UInt2 = UInt8
+//public typealias UInt3 = UInt8
+//public typealias UInt4 = UInt8
+//public typealias UInt5 = UInt8
+//public typealias UInt6 = UInt8
+//public typealias UInt7 = UInt8
+//
+//public typealias UInt9 = UInt16
+//public typealias UInt10 = UInt16
+//public typealias UInt11 = UInt16
+//public typealias UInt12 = UInt16
+//public typealias UInt13 = UInt16
 
-public typealias UInt9 = UInt16
-public typealias UInt10 = UInt16
-public typealias UInt11 = UInt16
-public typealias UInt12 = UInt16
-public typealias UInt13 = UInt16
+
+public struct Packet
+{
+    public let rawBytes: Data
+    public let timestamp: Date
+    public let Ethernet: Ethernet?
+    public let IPv4: IPv4?
+    public let TCP: TCP?
+    public let UDP: UDP?
+
+}
+
 
 // IEEE 802.3 Ethernet frame
 public struct Ethernet
@@ -80,6 +93,21 @@ public struct IPv4
     public let payload: Data
 }
 
+public struct IPv6
+{
+    public let version: UInt8 //4 bits
+    public let trafficClass: UInt8 //8 bits
+    public let flowLabel: UInt32//20bits
+    public let payloadLength: UInt16 //2 bytes
+    public let nextHeader: UInt8 //1 byte
+    public let hopLimit: UInt8 //1 byte
+    public let sourceAddress: Data //16 bytes
+    public let destinationAddress: Data //16 bytes
+    //options?
+    public let payload: Data
+}
+
+
 public enum IPversion: Int {
     case IPv4 = 4
     case IPv6 = 6
@@ -100,14 +128,26 @@ extension IPversion {
 
 
 public enum IPprotocolNumber: Int {
-     //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-     case ICMP = 0x01
-     case TCP = 0x06 //first
-     case UDP = 0x11 //second
-     case RDP = 0x1B
-     case IPv6 = 0x29 //third
-     case L2TP = 0x73
-     case SCTP = 0x84
+    //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
+    case ICMP = 0x01
+    case TCP = 0x06 //first
+    case UDP = 0x11 //second
+    case RDP = 0x1B
+    case IPv6 = 0x29 //third
+    case L2TP = 0x73
+    case SCTP = 0x84
+    
+    //IPv6 options:
+    case HOPOPT = 0x00 //IPv6 Hop-by-Hop Option
+    case IPv6Route = 0x2B //Routing Header for IPv6
+    case IPv6Frag = 0x2C //Fragment Header for IPv6
+    case ESP = 0x32 //Encapsulating Security Payload
+    case AH = 0x33 //Authentication Header
+    case IPv6Opts = 0x3C//Destination Options for IPv6
+    case MobilityHeader = 0x87 //Mobility Extension Header for IPv6
+    case HIP = 0x8B //Host Identity Protocol
+    case Shim6 = 0x8C //Site Multihoming by IPv6 Intermediation
+    //expiramental 0xFD & 0xFE
 }
 
 extension IPprotocolNumber{
@@ -151,6 +191,19 @@ public struct TCP
     
 
 }
+
+public struct UDP
+{
+    public let sourcePort: UInt16
+    public let destinationPort: UInt16
+    public let length: UInt16
+    public let checksum: UInt16
+    public let payload: Data?
+    
+}
+
+
+
 
 extension Ethernet: MaybeDatable
 {
@@ -433,59 +486,15 @@ extension IPv4: MaybeDatable
 }
 
 
-
-
 extension TCP: MaybeDatable
 {
     public init?(data: Data) {
         //https://en.wikipedia.org/wiki/Transmission_Control_Protocol#TCP_segment_structure
         //https://tools.ietf.org/html/rfc7414 - roadmap to TCP RFCs
-        /*
-        Source port - 2 bytes
-        Destination port - 2 bytes
-        Sequence Number - 4 bytes
-        Ack Number if ack set - 4 bytes
-        Data offset - 4 Bits
-        Reserved - 3 Bits
-        NS - 1 Bit
-        CWR - 1 Bit
-        ECE - 1 Bit
-        URG - 1 Bit
-        ACK - 1 Bit
-        PSH - 1 Bit
-        RST - 1 Bit
-        SYN - 1 Bit
-        FIN - 1 Bit
-        Window size - 2 bytes
-        checksum - 2 bytes
-        Urgent pointer (if URG set) - 2 bytes
-        Options (if data offset > 5. Padded at the end with "0" bytes if necessary.) (Variable 0–320 bits, divisible by 32)
-        Payload
-        
-        public let sourcePort: UInt16
-        public let destinationPort: UInt16
-        public let sequenceNumber: Data
-        public let acknowledgementNumber: Data?  //why is this optional? is it because the ACK flag must be set? but we don't know if it's junk until after it's parsed out and we're able to get to the ACK flag -- do we then set to nil
-        public let offset: UInt8
-        public let reserved: UInt8
-        public let ns: UInt8 //Bool
-        public let cwr: UInt8 //Bool
-        public let ece: UInt8 //Bool
-        public let urg: UInt8 //Bool
-        public let ack: UInt8 //Bool
-        public let psh: UInt8 //Bool
-        public let rst: UInt8 //Bool
-        public let syn: UInt8 //Bool
-        public let fin: UInt8 //Bool
-        public let windowSize: UInt16
-        public let checksum: UInt16
-        public let urgentPointer: UInt16? //optional because URG flag must be set? similar to acknum
-        public let options: Data?
-        public let payload: Data?
-        */
+
         print("start parsing TCP")
         DatableConfig.endianess = .little
-        //DatableConfig.endianess = .big
+
         var bits = Bits(data: data)
 
         DatableConfig.endianess = .big
@@ -515,7 +524,6 @@ extension TCP: MaybeDatable
             }
         }
         print("")
-        
         
         guard let acknowledgementNumber = bits.unpack(bytes: 4) else { return nil }
         self.acknowledgementNumber = acknowledgementNumber.data
@@ -611,9 +619,7 @@ extension TCP: MaybeDatable
         let urgentPointerUint16 = urgentPointer.uint16
         self.urgentPointer = urgentPointerUint16
         print("urgentPointer: 0x" + String(format: "%02x", self.urgentPointer) + " - 0d" + String(format: "%u", self.urgentPointer))
-            
         DatableConfig.endianess = .little
-        
         
         if offsetUint8  > 5 && offsetUint8 < 16 {
             let bytesToRead = Int((self.offset - 5) * 4)
@@ -633,8 +639,6 @@ extension TCP: MaybeDatable
                 }
             }
             print("")
-            
-            
         } else {
             print("options: nil")
             self.options = nil
@@ -642,7 +646,6 @@ extension TCP: MaybeDatable
         
         
         //payload
-        
         if Int(bits.count/8) > 0 {
             guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
             
@@ -663,9 +666,6 @@ extension TCP: MaybeDatable
             print("payload: nil")
             self.payload = nil
         }
-            
-
-        
     }
 
    public var data: Data {
@@ -699,4 +699,69 @@ extension TCP: MaybeDatable
         
         return result
     }
+}
+
+extension UDP: MaybeDatable
+{
+    public init?(data: Data) {
+        DatableConfig.endianess = .little
+        var bits = Bits(data: data)
+        
+        DatableConfig.endianess = .big
+        guard let sourcePort = bits.unpack(bytes: 2) else { return nil }
+        let sourcePortUint16 = sourcePort.uint16
+        self.sourcePort = sourcePortUint16
+        print("sourcePort: 0x" + String(format: "%02x", self.sourcePort) + " - 0d" + String(format: "%u", self.sourcePort))
+        
+        guard let destinationPort = bits.unpack(bytes: 2) else { return nil }
+        let destinationPortUint16 = destinationPort.uint16
+        self.destinationPort = destinationPortUint16
+        print("destinationPort: 0x" + String(format: "%02x", self.destinationPort) + " - 0d" + String(format: "%u", self.destinationPort))
+        
+        guard let length = bits.unpack(bytes: 2) else { return nil }
+        let lengthUint16 = length.uint16
+        self.length = lengthUint16
+        print("Length: 0x" + String(format: "%02x", self.length) + " - 0d" + String(format: "%u", self.length))
+        
+        guard let checksum = bits.unpack(bytes: 2) else { return nil }
+        let checksumUint16 = checksum.uint16
+        self.checksum = checksumUint16
+        print("checksum: 0x" + String(format: "%02x", self.checksum))
+        DatableConfig.endianess = .little
+        
+        //payload
+        if Int(bits.count/8) > 0 {
+            guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
+            
+            self.payload = payload
+            var count = 0
+            print("payload:")
+            for byte in payload {
+                print(String(format: "%02x", byte), terminator: " ")
+                count += 1
+                if count % 8 == 0{
+                    print(" ", terminator: "")
+                }
+                if count % 16 == 0{
+                    print("")
+                }
+            }
+        } else {
+            print("payload: nil")
+            self.payload = nil
+        }
+    }
+    
+       public var data: Data {
+            DatableConfig.endianess = .little
+            var result = Data()
+        
+            result.append(sourcePort.data)
+            result.append(destinationPort.data)
+            result.append(length.data)
+            result.append(checksum.data)
+            result.append(payload ?? 0x00.data) //fix
+            
+            return result
+        }
 }
