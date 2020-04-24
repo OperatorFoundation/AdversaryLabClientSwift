@@ -622,6 +622,8 @@ public struct Bits: MaybeDatable
             {
                 return nil
             }
+            
+            leftover = bs
 
             // Convert the SimpleBits result back into Bits
             return Bits(data: nil, bits: result)
