@@ -135,6 +135,9 @@ class State
         while true
         {
             let bytes = source.nextPacket()
+            let timestampMicrosecs = Date().timeIntervalSince1970 //* 1e6
+            //let currentPacket = Packet()
+            
             if bytes.count == 0
             {
                 print("\n\n_", terminator: "")
@@ -143,9 +146,10 @@ class State
             else
             {
                 
+                
                 debug_packetCount += 1
                 print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
-                
+                print("timestamp: " + String(format: "%F", timestampMicrosecs))
                 var count = 0
                 for byte in bytes{
                     print(String(format: "%02x", byte), terminator: " ")
@@ -176,6 +180,17 @@ class State
                                  }
                             }
                             
+                            if ippacket.protocolNumber == 0x11 {
+                                if let udpSegment = UDP(data: ippacket.payload){
+                                     print("\nUDP parse success!\n")
+                                     
+                                }else{
+                                     print("\nno parse UDP\n")
+                                 }
+                            }
+                            
+                            
+                            
                         } else {
                             print("\nno parse IPv4\n")
                         }
@@ -193,7 +208,7 @@ class State
 //                if let packet = TCP(data: Data(bytes))
 //                {
 //                    dest.enqueue(packet)
-//                    
+//
 //                }
             }
         }
