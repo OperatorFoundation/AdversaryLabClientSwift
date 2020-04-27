@@ -218,7 +218,6 @@ public struct TCP
     public let fin: UInt8 //Bool
     public let windowSize: UInt16
     public let checksum: UInt16
-    //public let urgentPointer: UInt16
     public let urgentPointer: UInt16
     public let options: Data?
     public let payload: Data?
@@ -284,7 +283,7 @@ extension Ethernet: MaybeDatable
             guard let type = bits.unpack(bytes: 2) else { return nil }
             
             guard let tempType = EtherType(data: type) else {
-                print("1 Failed EtherType conversion - Ethernet Packet Type: \(type as! NSData)")
+                //print("1 Failed EtherType conversion - Ethernet Packet Type: \(type as! NSData)")
                 return nil
             }
             
@@ -305,17 +304,14 @@ extension Ethernet: MaybeDatable
 //
 //        }
          else if typeOrTagUInt16 == 0x0800 {
-            guard let tempType = EtherType(data: typeOrTagPrefix) else {
-                print("2 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
-                return nil
-            }
+            let tempType = EtherType(data: typeOrTagPrefix)! //force unwrap ok because typeOrTagPrefix can't be nil because "let typeOrTagUInt16 = typeOrTagPrefix.uint16" and typeOrTagPrefix is 0x0800 per the above if
             self.tag1 = nil
             self.tag2 = nil
             self.type = tempType
             
         } else {
             guard let tempType = EtherType(data: typeOrTagPrefix) else {
-                print("3 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
+                //print("3 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
                 return nil
         }
             self.type = tempType
@@ -335,8 +331,17 @@ extension Ethernet: MaybeDatable
 
         result.append(MACDestination)
         result.append(MACSource)
-        result.append(type.data ?? 0x0000.data) //fix is this the right way to append type?
-        if let t = tag1 //fix, is this the right way to append tag1?
+        
+        if let typeData = type.data{
+            result.append(typeData)
+        }
+        
+        if let t = tag1
+        {
+            result.append(t)
+        }
+        
+        if let t = tag2
         {
             result.append(t)
         }
@@ -452,7 +457,7 @@ extension IPv4: MaybeDatable
         
         print("do options exist?")
         // do options exist?
-        if IHL.int ?? 0 > 5{
+        if IHL.int! > 5{
             //FIX, add code to parse options field
             print("!! IPv4 parsing, IHL > 5, need to parse options field in IP header")
             return nil
@@ -486,10 +491,9 @@ extension IPv4: MaybeDatable
         result.append(checksum.data)
         result.append(sourceAddress)
         result.append(destinationAddress)
-        if options != nil {
-            result.append(options!) //fix
+        if let optionsData = options {
+            result.append(optionsData)
         }
-        
         result.append(payload)
         
         return result
@@ -630,7 +634,6 @@ extension TCP: MaybeDatable
         //payload
         if Int(bits.count/8) > 0 {
             guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
-            
             self.payload = payload
             print("payload:")
             printDataBytes(bytes: payload, hexDumpFormat: true, seperator: "", decimal: false)
@@ -661,14 +664,12 @@ extension TCP: MaybeDatable
         result.append(windowSize.data)
         result.append(checksum.data)
         result.append(urgentPointer.data)
-//        if let unwrappedUrgentPointer = urgentPointer{
-//            result.append(unwrappedUrgentPointer.data)
-//        } else {
-//            result.append(0x00.data)
-//        }
-        result.append(options ?? 0x00.data) //fix
-        result.append(payload ?? 0x00.data) //fix
-        
+        if let optionsData = options {
+            result.append(optionsData)
+        }
+        if let payloadData = payload{
+            result.append(payloadData) //fix
+        }
         return result
     }
 }
@@ -714,16 +715,18 @@ extension UDP: MaybeDatable
         }
     }
     
-       public var data: Data {
-            DatableConfig.endianess = .little
-            var result = Data()
-        
-            result.append(sourcePort.data)
-            result.append(destinationPort.data)
-            result.append(length.data)
-            result.append(checksum.data)
-            result.append(payload ?? 0x00.data) //fix
-            
-            return result
+    public var data: Data {
+        DatableConfig.endianess = .little
+        var result = Data()
+
+        result.append(sourcePort.data)
+        result.append(destinationPort.data)
+        result.append(length.data)
+        result.append(checksum.data)
+        if let payloadData = payload {
+            result.append(payloadData)
         }
+        
+        return result
+    }
 }
