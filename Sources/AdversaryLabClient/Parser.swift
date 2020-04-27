@@ -646,7 +646,7 @@ extension TCP: MaybeDatable
         result.append(sourcePort.data)
         result.append(destinationPort.data)
         result.append(sequenceNumber.data)
-        result.append(acknowledgementNumber.data ?? 0x00.data) //fix
+        result.append(acknowledgementNumber.data) //fix
         result.append(offset)
         result.append(reserved)
         result.append(ns)

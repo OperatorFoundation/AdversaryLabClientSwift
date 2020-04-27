@@ -149,7 +149,7 @@ final class ParserTests: XCTestCase
         XCTAssertEqual(correct.uint, result)
     }
     
-    func testEthernetInit(){
+    func testEthernetIPv4Init(){
         //fix / verify
         //sample source: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=tcp-ethereal-file1.trace
         //packet #4
@@ -271,6 +271,103 @@ final class ParserTests: XCTestCase
         
     }
     
+    func testTCPinitData(){
+        //https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=telnet-raw.pcap
+        //excerpt from packet #4
+        
+        let packetTCPBytes = Data(array: [
+            0x04, 0xe6, 0x00, 0x17, 0x04, 0x53, 0xd8, 0x70, 0xc0, 0x40, 0x87, 0xcf, 0x80, 0x18, 0x7d, 0x78,
+            0x79, 0x0a, 0x00, 0x00, 0x01, 0x01, 0x08, 0x0a, 0x00, 0x16, 0x0a, 0x27, 0x00, 0x05, 0x4b, 0x63,
+            0xff, 0xfd, 0x03, 0xff, 0xfb, 0x18, 0xff, 0xfb, 0x1f, 0xff, 0xfb, 0x20, 0xff, 0xfb, 0x21, 0xff,
+            0xfb, 0x22, 0xff, 0xfb, 0x27, 0xff, 0xfd, 0x05, 0xff, 0xfb, 0x23
+        ])
+        
+        let correctSourcePort: UInt16 = 0x04e6
+        let correctDestinationPort: UInt16 = 0x0017
+        let correctSequenceNumber: Data = Data(array: [0x04, 0x53, 0xd8, 0x70])
+        let correctAcknowledgementNumber: Data = Data(array: [0xc0, 0x40, 0x87, 0xcf])
+        let correctOffset: UInt8 = 0x08
+        let correctReserved: UInt8 = 0b000
+        let correctNS: UInt8 = 0b0
+        let correctCWR: UInt8 = 0b0
+        let correctECE: UInt8 = 0b0
+        let correctURG: UInt8 = 0b0
+        let correctACK: UInt8 = 0b1
+        let correctPSH: UInt8 = 0b1
+        let correctRST: UInt8 = 0b0
+        let correctSYN: UInt8 = 0b0
+        let correctFIN: UInt8 = 0b0
+        let correctWindowSize: UInt16 = 0x7d78
+        let correctCheckSum: UInt16 = 0x790a
+        let correctUrgentPointer: UInt16 = 0x0000
+        let correctOptions: Data = Data(array: [0x01, 0x01, 0x08, 0x0a, 0x00, 0x16, 0x0a, 0x27, 0x00, 0x05, 0x4b, 0x63])
+        let correctPayload: Data = Data(array:[
+            0xff, 0xfd, 0x03, 0xff, 0xfb, 0x18, 0xff, 0xfb, 0x1f, 0xff, 0xfb, 0x20, 0xff, 0xfb, 0x21, 0xff,
+            0xfb, 0x22, 0xff, 0xfb, 0x27, 0xff, 0xfd, 0x05, 0xff, 0xfb, 0x23])
+        
+        let correctDataBytes = Data(array:[
+            0xe6, 0x04, //sourcce //fix? reversed bytes?
+            0x17, 0x00, //dest //fix? reversed bytes?
+            0x04, 0x53, 0xd8, 0x70, //seq#
+            0xc0, 0x40, 0x87, 0xcf, //ack#
+            0x08, //offset
+            0x00, //reserved
+            0x00, //ns
+            0x00, //cwr
+            0x00, //ece
+            0x00, //urg
+            0x01, //ack
+            0x01, //psh
+            0x00, //rst
+            0x00, //syn
+            0x00, //fin
+            0x78, 0x7d, //windowsize //fix? reversed bytes?
+            0x0a, 0x79, //checksum //fix? reversed bytes?
+            0x00, 0x00, //urgent pointer //fix? reversed bytes?
+            //options
+            0x01, 0x01, 0x08, 0x0a, 0x00, 0x16, 0x0a, 0x27, 0x00, 0x05, 0x4b, 0x63,
+            //data
+            0xff, 0xfd, 0x03, 0xff, 0xfb, 0x18, 0xff, 0xfb,
+            0x1f, 0xff, 0xfb, 0x20, 0xff, 0xfb, 0x21, 0xff,
+            0xfb, 0x22, 0xff, 0xfb, 0x27, 0xff, 0xfd, 0x05, 0xff, 0xfb, 0x23
+
+        ])
+        
+        if let TCPsegment = TCP(data: packetTCPBytes){
+            XCTAssertEqual(TCPsegment.sourcePort, correctSourcePort)
+            XCTAssertEqual(TCPsegment.destinationPort, correctDestinationPort)
+            XCTAssertEqual(TCPsegment.sequenceNumber, correctSequenceNumber)
+            XCTAssertEqual(TCPsegment.acknowledgementNumber, correctAcknowledgementNumber)
+            XCTAssertEqual(TCPsegment.offset, correctOffset)
+            XCTAssertEqual(TCPsegment.reserved, correctReserved)
+            XCTAssertEqual(TCPsegment.ns, correctNS)
+            XCTAssertEqual(TCPsegment.cwr, correctCWR)
+            XCTAssertEqual(TCPsegment.ece, correctECE)
+            XCTAssertEqual(TCPsegment.urg, correctURG)
+            XCTAssertEqual(TCPsegment.ack, correctACK)
+            XCTAssertEqual(TCPsegment.psh, correctPSH)
+            XCTAssertEqual(TCPsegment.rst, correctRST)
+            XCTAssertEqual(TCPsegment.syn, correctSYN)
+            XCTAssertEqual(TCPsegment.fin, correctFIN)
+            XCTAssertEqual(TCPsegment.windowSize, correctWindowSize)
+            XCTAssertEqual(TCPsegment.checksum, correctCheckSum)
+            XCTAssertEqual(TCPsegment.urgentPointer, correctUrgentPointer)
+            XCTAssertEqual(TCPsegment.options, correctOptions)
+            XCTAssertEqual(TCPsegment.payload, correctPayload)
+            
+            let TCPsegmentData = TCPsegment.data
+            XCTAssertEqual(TCPsegmentData, correctDataBytes)
+            
+        } else {
+           XCTFail()
+           return
+        }
+    }
+   
+    
+
+    
+    
     func testEthernetInit_VLANtag(){
         //https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=vlan.cap.gz
         //packet #6
@@ -316,6 +413,9 @@ final class ParserTests: XCTestCase
         //fix / verify
     }
     
+
+    
+    
     func testUDPInit(){
         //https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=b6300a.cap
         //packet #2
@@ -339,12 +439,31 @@ final class ParserTests: XCTestCase
             0x01, 0x01, 0x82, 0x29, 0x5d, 0x01, 0x1b, 0x02, 0x02, 0x01
         ])
         
+        let correctUDPsegmentBytes = Data(array:[
+            0xa1, 0x00, // source port //fix? reversed bytes?
+            0x2c, 0x3e, // dest port //fix? reversed bytes?
+            0x42, 0x00, // length //fix? reversed bytes?
+            0x6d, 0x7d, // checksum //fix? reversed bytes?
+            0x30, 0x38, 0x02, 0x01, 0x00, 0x04, 0x06, 0x70,
+            0x75, 0x62, 0x6c, 0x69, 0x63, 0xa2, 0x2b, 0x02, 0x01, 0x26, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00,
+            0x30, 0x20, 0x30, 0x1e, 0x06, 0x08, 0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x02, 0x00, 0x06, 0x12,
+            0x2b, 0x06, 0x01, 0x04, 0x01, 0x8f, 0x51, 0x01, 0x01, 0x01, 0x82, 0x29, 0x5d, 0x01, 0x1b, 0x02,
+            0x02, 0x01
+        ])
+        
+        
         if let udpSegment = UDP(data: packetUDPBytes){
             XCTAssertEqual(udpSegment.sourcePort, correctSourcePort)
             XCTAssertEqual(udpSegment.destinationPort, correctDestinationPort)
             XCTAssertEqual(udpSegment.length, correctLength)
             XCTAssertEqual(udpSegment.checksum, correctChecksum)
             XCTAssertEqual(udpSegment.payload, correctPayload)
+            
+            let udpSegmentData = udpSegment.data
+            print("udp:d")
+            printDataBytes(bytes: udpSegmentData, hexDumpFormat: true, seperator: "", decimal: false)
+            XCTAssertEqual(udpSegmentData, correctUDPsegmentBytes)
+            
             
             
         } else {
