@@ -295,7 +295,66 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(byte, 0b11111111)
     }
     
-    // Bits tests
+    //MARK: Test SimplBits+MaybeIntable
+    
+    func testSimplBits_MaybeIntable()
+    {
+        let correctUint: UInt = 15
+        let correctUint8: UInt8 = 15
+        let correctUint16: UInt16 = 15
+        let correctUint32: UInt32 = 15
+        let correctUint64: UInt64 = 15
+
+        let correctInt: Int = 15
+        let correctInt8: Int8 = 15
+        let correctInt16: Int16 = 15
+        let correctInt32: Int32 = 15
+        let correctInt64: Int64 = 15
+        
+        let sb1 = SimpleBits(byte: 0x0F)
+        
+        let uint = sb1.uint
+        XCTAssertNotNil(uint)
+        XCTAssertEqual(uint, correctUint)
+        
+        let uint8 = sb1.uint8
+        XCTAssertNotNil(uint8)
+        XCTAssertEqual(uint8!, correctUint8)
+        
+        let uint16 = sb1.uint16
+        XCTAssertNotNil(uint16)
+        XCTAssertEqual(uint16!, correctUint16)
+
+        let uint32 = sb1.uint32
+        XCTAssertNotNil(uint32)
+        XCTAssertEqual(uint32!, correctUint32)
+        
+        let uint64 = sb1.uint64
+        XCTAssertNotNil(uint64)
+        XCTAssertEqual(uint64!, correctUint64)
+        
+        let int = sb1.int
+        XCTAssertNotNil(int)
+        XCTAssertEqual(int, correctInt)
+        
+        let int8 = sb1.int8
+        XCTAssertNotNil(int8)
+        XCTAssertEqual(int8!, correctInt8)
+        
+        let int16 = sb1.int16
+        XCTAssertNotNil(int16)
+        XCTAssertEqual(int16!, correctInt16)
+
+        let int32 = sb1.int32
+        XCTAssertNotNil(int32)
+        XCTAssertEqual(int32!, correctInt32)
+        
+        let int64 = sb1.int64
+        XCTAssertNotNil(int64)
+        XCTAssertEqual(int64!, correctInt64)
+    }
+    
+    //MARK: Bits tests
     func testBitsUnpackBitsEmpty()
     {
         var bits = Bits()
