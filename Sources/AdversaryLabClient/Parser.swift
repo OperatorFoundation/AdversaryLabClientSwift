@@ -22,6 +22,40 @@ import Datable
 //public typealias UInt13 = UInt16
 
 
+public func printDataBytes(bytes: Data, hexDumpFormat: Bool, seperator: String, decimal: Bool){
+    
+    if hexDumpFormat {
+        var count = 0
+        for byte in bytes{
+            print(String(format: "%02x", byte), terminator: " ")
+            count += 1
+            if count % 8 == 0{
+                print(" ", terminator: "")
+            }
+            if count % 16 == 0{
+                print("")
+            }
+        }
+    } else {
+        var i = 0
+        for byte in bytes{
+            if decimal{
+                print(String(format: "%u", byte), terminator: "")
+            }else{
+                print(String(format: "%02x", byte), terminator: "")
+            }
+            i += 1
+            if i < bytes.count { print(seperator, terminator: "")}
+        }
+        
+    }
+    
+    
+    
+    
+    print("")
+}
+
 public struct Packet
 {
     public let rawBytes: Data
@@ -45,7 +79,7 @@ public struct Ethernet
     public let payload: Data // variable, 46-1500 bytes, specified by length
 }
 
-public enum EtherType: Int {
+public enum EtherType: UInt16 {
     case IPv4 = 0x0800    //Internet Protocol version 4 (IPv4)
     case rev4vPI = 0x0080
     case ARP = 0x0806    //Address Resolution Protocol (ARP)
@@ -58,7 +92,7 @@ public extension EtherType {
     
     init?(data: Data) {
         DatableConfig.endianess = .big
-        let x = Int(data.uint16)
+        let x = UInt16(data.uint16)
         self.init(rawValue: x)
     }
     
@@ -127,7 +161,7 @@ extension IPversion {
 }
 
 
-public enum IPprotocolNumber: Int {
+public enum IPprotocolNumber: UInt8 {
     //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
     case ICMP = 0x01
     case TCP = 0x06 //first
@@ -152,13 +186,13 @@ public enum IPprotocolNumber: Int {
 
 extension IPprotocolNumber{
     init?(data: Data) {
-        let x = data.int
+        let x = data.uint8
         self.init(rawValue: x)
     }
     
     var data: Data? {
         let x = self.rawValue
-        return Data(int: x)
+        return Data(uint8: x)
     }
     
 }
@@ -184,7 +218,6 @@ public struct TCP
     public let fin: UInt8 //Bool
     public let windowSize: UInt16
     public let checksum: UInt16
-    //public let urgentPointer: UInt16
     public let urgentPointer: UInt16
     public let options: Data?
     public let payload: Data?
@@ -214,37 +247,25 @@ extension Ethernet: MaybeDatable
         guard let MACDestination = bits.unpack(bytes: 6) else { return nil }
         self.MACDestination = MACDestination
         print("dst: ", terminator: "")
-        var i = 0
-        for byte in self.MACDestination {
-            print(String(format: "%02x", byte), terminator: "")
-            i += 1
-            if i < 6 { print(":", terminator: "")}
-        }
-        print("")
+        printDataBytes(bytes: self.MACDestination, hexDumpFormat: false, seperator: ":", decimal: false)
         
         guard let MACSource = bits.unpack(bytes: 6) else { return nil }
         self.MACSource = MACSource
         print("src: ", terminator: "")
-        i = 0
-        for byte in self.MACSource{
-            print(String(format: "%02x", byte), terminator: "")
-            i += 1
-            if i < 6 { print(":", terminator: "")}
-        }
-        print("")
+        printDataBytes(bytes: self.MACSource, hexDumpFormat: false, seperator: ":", decimal: false)
+
        
         // links for type or tag documentation
         // https://en.wikipedia.org/wiki/IEEE_802.1Q
         // https://en.wikipedia.org/wiki/EtherType
         guard let typeOrTagPrefix = bits.unpack(bytes: 2) else { return nil }
         print("typeOrTagPrefix: 0x", terminator: "")
-        for byte in typeOrTagPrefix {
-            print(String(format: "%02x", byte), terminator: "")
-        }
+        printDataBytes(bytes: typeOrTagPrefix, hexDumpFormat: false, seperator: "", decimal: false)
+
         
         DatableConfig.endianess = .big
         let typeOrTagUInt16 = typeOrTagPrefix.uint16
-        print(" -- \(typeOrTagUInt16)")
+        print("typeOrTagPrefix: 0xd\(typeOrTagUInt16)")
         DatableConfig.endianess = .little
         
         
@@ -253,6 +274,7 @@ extension Ethernet: MaybeDatable
             guard let tag2 = bits.unpack(bytes: 2) else { return nil } //collect 2nd half of tag
             
             //Combine type and tag2 then store in self.tag1
+            //fix, should the tag be both the 0x8100 and VLAN ID?
             var tempTag = typeOrTagPrefix
             tempTag.append(tag2.data)
             self.tag1 = tempTag.data
@@ -261,37 +283,37 @@ extension Ethernet: MaybeDatable
             guard let type = bits.unpack(bytes: 2) else { return nil }
             
             guard let tempType = EtherType(data: type) else {
-                print("1 Failed EtherType conversion - Ethernet Packet Type: \(type as! NSData)")
+                //print("1 Failed EtherType conversion - Ethernet Packet Type: \(type as! NSData)")
                 return nil
             }
             
             self.type = tempType
             self.tag2 = nil
             
-        } else if typeOrTagUInt16 == 0x88a8 {
-            //fix this, add double tag parsing
-            //802.1Q double tagged 0x88a8 -- confirm it's not 0x9100
-            //read 2 bytes combine with typeOrTagPrefix and store in tag1
-            //read 4 bytes and store as tag2, first 2 bytes should be 0x8100
-            //read 2 bytes and assign to self.type
-            self.tag2 = nil
-            print("!! 802.1Q double tag not parsed !!")
-            return nil
-            
-        } else if typeOrTagUInt16 == 0x0800 {
-            guard let tempType = EtherType(data: typeOrTagPrefix) else {
-                print("2 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
-                return nil
-            }
+        }
+            //fix double tagging
+//        else if typeOrTagUInt16 == 0x88a8 { // fix what about 0x9100 seems that's also a doubletagged frame
+//            //fix this, add double tag parsing
+//            //802.1Q double tagged 0x88a8 -- confirm it's not 0x9100
+//            //read 2 bytes combine with typeOrTagPrefix and store in tag1
+//            //read 4 bytes and store as tag2, first 2 bytes should be 0x8100
+//            //read 2 bytes and assign to self.type
+//            self.tag2 = nil
+//            print("!! 802.1Q double tag not parsed !!")
+//            return nil
+//
+//        }
+         else if typeOrTagUInt16 == 0x0800 {
+            let tempType = EtherType(data: typeOrTagPrefix)! //force unwrap ok because typeOrTagPrefix can't be nil because "let typeOrTagUInt16 = typeOrTagPrefix.uint16" and typeOrTagPrefix is 0x0800 per the above if
             self.tag1 = nil
             self.tag2 = nil
             self.type = tempType
             
         } else {
             guard let tempType = EtherType(data: typeOrTagPrefix) else {
-                print("3 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
+                //print("3 Failed EtherType conversion - Ethernet Packet Type: \(typeOrTagPrefix as! NSData)")
                 return nil
-            }
+        }
             self.type = tempType
             self.tag1 = nil
             self.tag2 = nil
@@ -310,7 +332,16 @@ extension Ethernet: MaybeDatable
         result.append(MACDestination)
         result.append(MACSource)
         
+        if let typeData = type.data{
+            result.append(typeData)
+        }
+        
         if let t = tag1
+        {
+            result.append(t)
+        }
+        
+        if let t = tag2
         {
             result.append(t)
         }
@@ -399,7 +430,7 @@ extension IPv4: MaybeDatable
         self.ttl = ttlUint8
         print("TTL: 0d" + String(format: "%u", self.ttl))
         
-        guard let protocolNumber = bits.unpack(bytes: 1) else { return nil }
+        guard let protocolNumber = bits.unpack(bytes: 1) else { return nil } //fix should use IPprotocolNumber()
         let protocolNumberUint8 = protocolNumber.uint8
         self.protocolNumber = protocolNumberUint8
         print("ProtocolNumber: 0d" + String(format: "%u", self.protocolNumber))
@@ -414,28 +445,19 @@ extension IPv4: MaybeDatable
         guard let sourceAddress = bits.unpack(bytes: 4) else { return nil }
         self.sourceAddress = sourceAddress.data
         print("sourceAddress: ", terminator: "")
-        var i = 0
-        for byte in self.sourceAddress {
-            print(String(format: "%u", byte), terminator: "")
-            i += 1
-            if i < 4 { print(".", terminator: "")}
-        }
-        print("")
+        
+        printDataBytes(bytes: self.sourceAddress, hexDumpFormat: false, seperator: ".", decimal: true)
+
         
         guard let destinationAddress = bits.unpack(bytes: 4) else { return nil }
         self.destinationAddress = destinationAddress.data
         print("destinationAddress: ", terminator: "")
-        i = 0
-        for byte in self.destinationAddress {
-            print(String(format: "%u", byte), terminator: "")
-            i += 1
-            if i < 4 { print(".", terminator: "")}
-        }
-        print("")
+        printDataBytes(bytes: self.destinationAddress, hexDumpFormat: false, seperator: ".", decimal: true)
+
         
         print("do options exist?")
         // do options exist?
-        if IHL.int ?? 0 > 5{
+        if IHL.int! > 5{
             //FIX, add code to parse options field
             print("!! IPv4 parsing, IHL > 5, need to parse options field in IP header")
             return nil
@@ -446,18 +468,9 @@ extension IPv4: MaybeDatable
         
         guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
         self.payload = payload
-        var count = 0
         print("payload:")
-        for byte in self.payload{
-            print(String(format: "%02x", byte), terminator: " ")
-            count += 1
-            if count % 8 == 0{
-                print(" ", terminator: "")
-            }
-            if count % 16 == 0{
-                print("")
-            }
-        }
+        printDataBytes(bytes: self.payload, hexDumpFormat: true, seperator: "", decimal: false)
+
     }
 
     public var data: Data {
@@ -478,7 +491,9 @@ extension IPv4: MaybeDatable
         result.append(checksum.data)
         result.append(sourceAddress)
         result.append(destinationAddress)
-        result.append(options ?? 0x00.data) //fix
+        if let optionsData = options {
+            result.append(optionsData)
+        }
         result.append(payload)
         
         return result
@@ -511,35 +526,15 @@ extension TCP: MaybeDatable
         
         guard let sequenceNumber = bits.unpack(bytes: 4) else { return nil }
         self.sequenceNumber = sequenceNumber.data
-        var count = 0
         print("SequenceNum: ", terminator: "")
-        for byte in sequenceNumber {
-            print(String(format: "%02x", byte), terminator: " ")
-            count += 1
-            if count % 8 == 0{
-                print(" ", terminator: "")
-            }
-            if count % 16 == 0{
-                print("")
-            }
-        }
-        print("")
+        printDataBytes(bytes: sequenceNumber, hexDumpFormat: true, seperator: "", decimal: false)
+
         
         guard let acknowledgementNumber = bits.unpack(bytes: 4) else { return nil }
         self.acknowledgementNumber = acknowledgementNumber.data
-        count = 0
         print("acknowledgementNum: ", terminator: "")
-        for byte in acknowledgementNumber {
-            print(String(format: "%02x", byte), terminator: " ")
-            count += 1
-            if count % 8 == 0{
-                print(" ", terminator: "")
-            }
-            if count % 16 == 0{
-                print("")
-            }
-        }
-        print("")
+        printDataBytes(bytes: acknowledgementNumber, hexDumpFormat: true, seperator: "", decimal: false)
+
         
         DatableConfig.endianess = .big
         guard let offsetReservedFlags = bits.unpack(bytes: 2) else { return nil }
@@ -626,19 +621,10 @@ extension TCP: MaybeDatable
             guard let options = bits.unpack(bytes: bytesToRead) else { return nil }
             self.options = options.data
             
-            var count = 0
             print("options:")
-            for byte in options {
-                print(String(format: "%02x", byte), terminator: " ")
-                count += 1
-                if count % 8 == 0{
-                    print(" ", terminator: "")
-                }
-                if count % 16 == 0{
-                    print("")
-                }
-            }
-            print("")
+            printDataBytes(bytes: options, hexDumpFormat: true, seperator: "", decimal: false)
+            
+            
         } else {
             print("options: nil")
             self.options = nil
@@ -648,20 +634,9 @@ extension TCP: MaybeDatable
         //payload
         if Int(bits.count/8) > 0 {
             guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
-            
             self.payload = payload
-            var count = 0
             print("payload:")
-            for byte in payload {
-                print(String(format: "%02x", byte), terminator: " ")
-                count += 1
-                if count % 8 == 0{
-                    print(" ", terminator: "")
-                }
-                if count % 16 == 0{
-                    print("")
-                }
-            }
+            printDataBytes(bytes: payload, hexDumpFormat: true, seperator: "", decimal: false)
         } else {
             print("payload: nil")
             self.payload = nil
@@ -674,7 +649,7 @@ extension TCP: MaybeDatable
         result.append(sourcePort.data)
         result.append(destinationPort.data)
         result.append(sequenceNumber.data)
-        result.append(acknowledgementNumber.data ?? 0x00.data) //fix
+        result.append(acknowledgementNumber.data) //fix
         result.append(offset)
         result.append(reserved)
         result.append(ns)
@@ -689,14 +664,12 @@ extension TCP: MaybeDatable
         result.append(windowSize.data)
         result.append(checksum.data)
         result.append(urgentPointer.data)
-//        if let unwrappedUrgentPointer = urgentPointer{
-//            result.append(unwrappedUrgentPointer.data)
-//        } else {
-//            result.append(0x00.data)
-//        }
-        result.append(options ?? 0x00.data) //fix
-        result.append(payload ?? 0x00.data) //fix
-        
+        if let optionsData = options {
+            result.append(optionsData)
+        }
+        if let payloadData = payload{
+            result.append(payloadData) //fix
+        }
         return result
     }
 }
@@ -734,34 +707,26 @@ extension UDP: MaybeDatable
             guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
             
             self.payload = payload
-            var count = 0
             print("payload:")
-            for byte in payload {
-                print(String(format: "%02x", byte), terminator: " ")
-                count += 1
-                if count % 8 == 0{
-                    print(" ", terminator: "")
-                }
-                if count % 16 == 0{
-                    print("")
-                }
-            }
+            printDataBytes(bytes: payload, hexDumpFormat: true, seperator: "", decimal: false)
         } else {
             print("payload: nil")
             self.payload = nil
         }
     }
     
-       public var data: Data {
-            DatableConfig.endianess = .little
-            var result = Data()
-        
-            result.append(sourcePort.data)
-            result.append(destinationPort.data)
-            result.append(length.data)
-            result.append(checksum.data)
-            result.append(payload ?? 0x00.data) //fix
-            
-            return result
+    public var data: Data {
+        DatableConfig.endianess = .little
+        var result = Data()
+
+        result.append(sourcePort.data)
+        result.append(destinationPort.data)
+        result.append(length.data)
+        result.append(checksum.data)
+        if let payloadData = payload {
+            result.append(payloadData)
         }
+        
+        return result
+    }
 }
