@@ -4,7 +4,7 @@ import SwiftPCAP
 import SwiftQueue
 import AdversaryLabClient
 
-//import Rethink
+import Rethink
 
 struct Connection: Hashable
 {
@@ -12,16 +12,19 @@ struct Connection: Hashable
     let big: UInt16
 }
 
-func NewConnection(packet: TCP) -> Connection
+func NewConnection(packet: Packet) -> Connection?
 {
-    if packet.sourcePort < packet.destinationPort
+    guard let TCPsegment = packet.TCP else { return nil }
+    
+    if TCPsegment.sourcePort < TCPsegment.destinationPort
     {
-        return Connection(small: packet.sourcePort, big: packet.destinationPort)
+        return Connection(small: TCPsegment.sourcePort, big: TCPsegment.destinationPort)
     }
     else
     {
-        return Connection(small: packet.destinationPort, big: packet.sourcePort)
+        return Connection(small: TCPsegment.destinationPort, big: TCPsegment.sourcePort)
     }
+    
 }
 
 extension Connection
@@ -46,7 +49,7 @@ class State
     let allowBlockChannel: Queue<Bool> = Queue<Bool>()
     var captured: [Connection:ConnectionPackets] = [:]
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
-    let packetChannel: Queue<TCP> = Queue<TCP>()
+    let packetChannel: Queue<Packet> = Queue<Packet>()
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
     let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
     var debug_packetCount = 0
@@ -85,59 +88,68 @@ class State
 
     func capture(transport: String, port: String)
     {
+
+
         print("-> Launching server...")
 
-        guard let lab = Connect() else
-        {
-            print("Connect error!")
-            return
+//        guard let lab = Connect() else
+//        {
+//            print("Connect error!")
+//            return
+//        }
+        Connect() {
+            maybeClient in
+            guard let client = maybeClient else { return }
+            print("Connected.")
+            
+            #if os(OSX)
+            let deviceName: String = "en0"
+            #elseif os(Linux)
+            let deviceName: String = "ens18"
+            #else
+            let deviceName: String = "eth0"
+            #endif
+
+            guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
+            {
+                print("-> Error opening network device")
+                return
+            }
+            
+            let packetChannel = Queue<TCP>()
+            self.queue.async
+            {
+                print("readPkts")
+                self.readPackets(source: packetSource, dest: packetChannel)
+            }
+
+            guard let selectedPort = UInt16(port) else
+            {
+                print("selPort")
+                return
+            }
+
+            self.queue.async
+            {
+                print("capPort")
+                self.capturePort(selectedPort)
+            }
+            print("saveCaptured")
+            self.saveCaptured(client, transport)
+            
         }
 
-        print("Connected.")
         
-        #if os(OSX)
-        let deviceName: String = "en0"
-        #elseif os(Linux)
-        let deviceName: String = "ens18"
-        #else
-        let deviceName: String = "eth0"
-        #endif
-
-        guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
-        {
-            print("-> Error opening network device")
-            return
-        }
-        
-        let packetChannel = Queue<TCP>()
-        queue.async
-        {
-            print("readPkts")
-            self.readPackets(source: packetSource, dest: packetChannel)
-        }
-
-        guard let selectedPort = UInt16(port) else
-        {
-            print("selPort")
-            return
-        }
-
-        queue.async
-        {
-            print("capPort")
-            self.capturePort(selectedPort)
-        }
-        print("saveCaptured")
-        saveCaptured(lab, transport)
     }
 
     func readPackets(source: SwiftPCAP.Live, dest: Queue<TCP>)
     {
+        print("read packets")
         while true
         {
             let bytes = source.nextPacket()
-            let timestampMicrosecs = Date().timeIntervalSince1970 //* 1e6
-            //let currentPacket = Packet()
+            //let timestampMillisecs = Int(Date().timeIntervalSince1970 * 1e3) //converting from seconds to milliseconds
+            //let currentPacket = Packet(rawBytes: Data(array: bytes))
             
             if bytes.count == 0
             {
@@ -150,7 +162,7 @@ class State
                 
                 debug_packetCount += 1
                 print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
-                print("timestamp: " + String(format: "%F", timestampMicrosecs))
+                //print("timestamp: " + String(format: "%F", timestampMillisecs))
                 var count = 0
                 for byte in bytes{
                     print(String(format: "%02x", byte), terminator: " ")
@@ -225,7 +237,9 @@ class State
         {
             if let packet = packetChannel.dequeue()
             {
-                let conn = NewConnection(packet: packet)
+                guard let conn = NewConnection(packet: packet) else { continue }
+                
+                
                 guard conn.CheckPort(port: port) else
                 {
                     continue
@@ -233,7 +247,7 @@ class State
 
                 recordRawPacket(packet, port)
 
-                if packet.payload != nil
+                if packet.TCP?.payload != nil
                 {
                     recordPacket(packet, port)
 
@@ -247,11 +261,14 @@ class State
         }
     }
 
-    func recordRawPacket(_ packet: TCP, _ port: UInt16)
+    func recordRawPacket(_ packet: Packet, _ port: UInt16)
     {
         print("Entered recordRawPacket")
-        let conn = NewConnection(packet: packet)
-        let incoming = packet.destinationPort == port
+        guard let conn = NewConnection(packet: packet) else { return }
+        //let incoming = packet.destinationPort == port
+        guard let TCPsegment = packet.TCP else { return }
+        let incoming = TCPsegment.destinationPort == port
+        
         var connPackets = rawCaptured[conn, default: RawConnectionPackets()]
 
         if incoming {
@@ -263,11 +280,12 @@ class State
         }
     }
 
-    func recordPacket(_ packet: TCP, _ port: UInt16)
+    func recordPacket(_ packet: Packet, _ port: UInt16)
     {
         print("recPkt")
-        let conn = NewConnection(packet: packet)
-        let incoming = packet.destinationPort == port
+        guard let conn = NewConnection(packet: packet) else { return }
+        guard let TCPsegment = packet.TCP else { return }
+        let incoming = TCPsegment.destinationPort == port
         var maybeConnPackets = captured[conn]
     
         // This is the first packet of the connection
@@ -329,7 +347,7 @@ class State
                     }
                     
                     print("*")
-                    AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
+                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
                 }
             }
         }
@@ -343,13 +361,13 @@ class State
         for packet in buffer
         {
             print("-> Saving complete connections. --<-@")
-            AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
+            lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
         }
         
         for (_, rawConnection) in rawCaptured
         {
             print("-> Saving complete raw connections. --<-@")
-            AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection)
+            lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection)
         }
         
         // Usually we want both incoming and outgoingf packets
@@ -371,7 +389,7 @@ class State
                 if connection.Outgoing == nil
                 {
                     print("-> Saving incomplete connection.  --<-@")
-                    AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
+                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
                 }
             }
         }
@@ -380,15 +398,7 @@ class State
         exit(1)
     }
     
-    func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
-    {
-        print("addtrainpk")
-    }
-    
-    func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
-    {
-        print("addrawtrainpk")
-    }
+
 }
 
 
@@ -405,6 +415,11 @@ class State
 
 func main()
 {
+    
+    do { //allow debugger to attach
+        print("1 second pause to allow debugger to attach....")
+        sleep(1)
+    }
     print("-> Adversary Lab Client is running...Now in Swift!")
     let state = State()
 

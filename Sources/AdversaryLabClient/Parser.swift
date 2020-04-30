@@ -59,12 +59,17 @@ public func printDataBytes(bytes: Data, hexDumpFormat: Bool, seperator: String, 
 public struct Packet
 {
     public let rawBytes: Data
-    public let timestamp: Date
-    public let Ethernet: Ethernet?
-    public let IPv4: IPv4?
-    public let TCP: TCP?
-    public let UDP: UDP?
+    public let timestamp: Int //time in milliseconds since unix epoch
+    public var Ethernet: Ethernet?
+    public var IPv4: IPv4?
+    public var TCP: TCP?
+    public var UDP: UDP?
 
+    public init(rawBytes: Data) {
+        self.rawBytes = rawBytes
+        self.timestamp = Int(Date().timeIntervalSince1970 * 1e3) //converting from seconds to milliseconds
+        
+    }
 }
 
 
@@ -282,10 +287,7 @@ extension Ethernet: MaybeDatable
             //update the type since this frame has 802.1Q tagging and type comes after the tag
             guard let type = bits.unpack(bytes: 2) else { return nil }
             
-            guard let tempType = EtherType(data: type) else {
-                //print("1 Failed EtherType conversion - Ethernet Packet Type: \(type as! NSData)")
-                return nil
-            }
+            guard let tempType = EtherType(data: type) else { return nil }
             
             self.type = tempType
             self.tag2 = nil
@@ -455,14 +457,19 @@ extension IPv4: MaybeDatable
         printDataBytes(bytes: self.destinationAddress, hexDumpFormat: false, seperator: ".", decimal: true)
 
         
-        print("do options exist?")
+        
         // do options exist?
-        if IHL.int! > 5{
+        if IHLUint8 > 5 {
             //FIX, add code to parse options field
             print("!! IPv4 parsing, IHL > 5, need to parse options field in IP header")
-            return nil
+            
+            guard let options = bits.unpack(bytes: Int( (IHLUint8 - 5) * 4) ) else { return nil }
+            self.options = options.data
+            print("Options: ", terminator: "")
+            printDataBytes(bytes: self.destinationAddress, hexDumpFormat: false, seperator: ".", decimal: true)
+
         } else {
-            print("no options here")
+            print("Options: nil")
             self.options = nil
         }
         
@@ -649,7 +656,7 @@ extension TCP: MaybeDatable
         result.append(sourcePort.data)
         result.append(destinationPort.data)
         result.append(sequenceNumber.data)
-        result.append(acknowledgementNumber.data) //fix
+        result.append(acknowledgementNumber.data)
         result.append(offset)
         result.append(reserved)
         result.append(ns)
@@ -668,7 +675,7 @@ extension TCP: MaybeDatable
             result.append(optionsData)
         }
         if let payloadData = payload{
-            result.append(payloadData) //fix
+            result.append(payloadData)
         }
         return result
     }
