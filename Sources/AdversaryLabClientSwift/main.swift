@@ -4,6 +4,15 @@ import SwiftPCAP
 import SwiftQueue
 import AdversaryLabClient
 
+
+//fix argument parsing to include reading from file
+//hack for reading from pcap file without parsing command line args...
+var filePath: String = ""
+let sourceReadFromFile: UInt8 = 1 //0= read from interface (default), 1=read from file
+let pcapFileName: String = "PCAPfiles/tcp-ethereal-file1.trace.pcap" //path starting from project base directory
+//end hack
+
+
 //import Rethink
 
 struct Connection: Hashable
@@ -103,19 +112,38 @@ class State
         let deviceName: String = "eth0"
         #endif
 
-        guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
-        {
-            print("-> Error opening network device")
-            return
-        }
-        
+
         let packetChannel = Queue<TCP>()
-        queue.async
-        {
-            print("readPkts")
-            self.readPackets(source: packetSource, dest: packetChannel)
+        switch sourceReadFromFile {
+            case 1 :
+                guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
+                {
+                    print("-> Error opening file")
+                    return
+                }
+                self.queue.async
+                {
+                    print("readPkts file")
+                    self.readPackets(source: packetSource, dest: packetChannel)
+                }
+            
+            default :
+                guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
+                {
+                    print("-> Error opening network device")
+                    return
+                }
+                self.queue.async
+                {
+                    print("readPkts interface")
+                    self.readPackets(source: packetSource, dest: packetChannel)
+                }
+            
         }
 
+        
+        
+        
         guard let selectedPort = UInt16(port) else
         {
             print("selPort")
@@ -129,9 +157,12 @@ class State
         }
         print("saveCaptured")
         saveCaptured(lab, transport)
+        
+        
+        
     }
 
-    func readPackets(source: SwiftPCAP.Live, dest: Queue<TCP>)
+    func readPackets(source: SwiftPCAP.Base, dest: Queue<TCP>)
     {
         while true
         {
@@ -142,6 +173,12 @@ class State
             if bytes.count == 0
             {
                 print("\n\n_", terminator: "")
+                
+                if sourceReadFromFile == 1 { //reading from file and have reached the end of file
+                    print("\n\nEnd of PCAP file reached\n")
+                    return
+                }
+                
                 sleep(1)
             }
             else
@@ -405,9 +442,37 @@ class State
 
 func main()
 {
+    do {
+        print("Delaying to allow debugger to attach to process...")
+        sleep(1)
+    }
     print("-> Adversary Lab Client is running...Now in Swift!")
     let state = State()
 
+    //https://swift.org/blog/argument-parser/
+    //https://github.com/apple/swift-argument-parser/blob/master/Documentation/01%20Getting%20Started.md
+    //https://developer.apple.com/documentation/swift/commandline
+
+    
+    //hack for running pcap files located in the project's directory, makes assumptions about the  DerrivedData path...
+    if sourceReadFromFile == 1 {
+        let basePath = CommandLine.arguments[0] //path of executable
+        var basePathURL = URL(fileURLWithPath: basePath)
+        for i in 1...6 { //cd .. to project directory from DerrivedData build directory
+           basePathURL.deleteLastPathComponent()
+        }
+        basePathURL.appendPathComponent(pcapFileName)
+        filePath = basePathURL.path
+
+        print("Reading Packets from file:")
+        print(filePath)
+    }
+    //end hack
+    
+    
+    
+    
+//  //orig code:
     if CommandLine.arguments.count < 3
     {
         usage()
@@ -460,6 +525,19 @@ func main()
 func usage()
 {
     //dest ip filter, AdversaryLabClient <transport> <port> [ip address] [protocol]
+    /*
+     <--interface INTERFACE_NAME > //read packets from a live interface eg eth0, en0, etc
+     <--transport, -t TRANSPORT >  //only include TRANSPORT packets
+     <--port PORT_NUMBER >           //only include packets on PORT_NUMBER
+     [--read-file -r FILE_PATH]   //read packets from a pcap file, if this is specified then interface option is ignored
+     [--list-interfaces] //list available interfaces, all other options are ignored. can SCNetworkConfiguration be used?
+     [--categorize-as -c BLOCK | ALLOW ] //if omitted buffering mode is assumed otherwise is categorized as specified
+     [--ip-address -i IPV4_ADDRESS ] //only include traffic to/from IPV4_ADDRESS
+     [--protocol ?PROTOCOL??? ] //only include PROTOCOL
+
+     
+     
+     */
     print("-> AdversaryLabClient <transport> <port> [protocol]")
     print("-> Example: AdversaryLabClient HTTP 80 allow")
     print("-> Example: AdversaryLabClient HTTPS 443 block")
