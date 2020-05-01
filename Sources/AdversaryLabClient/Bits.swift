@@ -28,6 +28,12 @@ public struct SimpleBits: MaybeDatable
         count = 0
     }
     
+    public init(byte: UInt8, bits: Int = 8)
+    {
+        buffer = byte
+        count = bits
+    }
+    
     public init?(data: Data)
     {
         if data.count == 0
@@ -298,15 +304,15 @@ public struct Bits: MaybeDatable
         if byteAligned || isEmpty
         {
             buffer.append(bytes)
-            return true
         }
         else
         {
             let bits = Bits(data: bytes)
-            guard pack(bits: bits) else {return false}
-            
-            return true
+            let success = pack(bits: bits) // This should not actually be able to fail.
+            assert(success)
         }
+        
+        return true
     }
     
     public mutating func unpack(bytes: Int) -> Data?
@@ -335,7 +341,8 @@ public struct Bits: MaybeDatable
     public mutating func pack(bit: UInt8) -> Bool
     {
         var simple = SimpleBits()
-        guard simple.pack(bit: bit) else {return false}
+        let success = simple.pack(bit: bit) // This should not actually be able to fail.
+        assert(success)
         
         let bits = Bits(data: nil, bits: simple)
         return pack(bits: bits)
@@ -351,10 +358,8 @@ public struct Bits: MaybeDatable
             // Case 1.a - we have just bytes and we are adding just bytes
             if bits.byteAligned
             {
-                guard pack(bytes: bits.buffer) else
-                {
-                    return false
-                }
+                let success = pack(bytes: bits.buffer) // This should not actually be able to fail.
+                assert(success)
                 
                 leftover = nil
                 
@@ -362,25 +367,15 @@ public struct Bits: MaybeDatable
             }
             else if bits.buffer.count == 0 // Case 1.b - we have just bytes we are adding just bits
             {
-                guard let rest = bits.leftover else { return false }
+                guard let rest = bits.leftover else { return false } // This should not actually be able to fail.
+ 
+                assert(!rest.byteAligned) // Bits.leftover should never be byte aligned, otherwise they would become bytes and be added to Bits.buffer
                 
-                // Case 1.b.i - we have just bytes and we are adding just bits that make up a full byte
-                if rest.byteAligned
-                {
-                    // Simplifies to Case 1.a
-                    let onlyBytes = Bits(data: rest.data, bits: nil)
-                    guard pack(bits: onlyBytes) else { return false }
-                    
-                    return true
-                }
-                else // Case 1.b.ii - we have just bytes and we are adding just bits that do not make up a full byte
+                // Therefore, we have just bytes and we are adding just bits that do not make up a full byte
+                // Copy bits
+                leftover = rest
 
-                {
-                    // Copy bits
-                    leftover = rest
-
-                    return true
-                }
+                return true
             }
             else // Case 1.c - we have just bytes and we are adding both bytes and bits
             {
@@ -388,43 +383,38 @@ public struct Bits: MaybeDatable
                 let onlyBytes = Bits(data: bits.buffer, bits: nil)
                 let onlyBits = Bits(data: nil, bits: bits.leftover)
                 
-                guard pack(bits: onlyBytes) else { return false }
-                guard pack(bits: onlyBits) else { return false }
+                let success1 = pack(bits: onlyBytes) // This should not fail.
+                assert(success1)
+                
+                let success2 = pack(bits: onlyBits) // This should not fail.
+                assert(success2)
                 
                 return true
             }
         }
         else // Case 2 - we have bits (and maybe also bytes)
         {
-            let neededForAlignment = 8 - (count % 8)
+            let neededForAlignment = 8 - (count % 8) // A number from 1 to 7.
             
-            // Case 2.a - we have bits and we are adding the exact number of bits for alignment
-            if bits.count == neededForAlignment
+            // Case 2.a - we have bits and we are adding the exact number of bits needed for alignment
+            if bits.count == neededForAlignment // A number from 1 to 7.
             {
-                guard bits.buffer.count == 0 else
+                assert(bits.buffer.count == 0)
+                
+                guard let rest = bits.leftover else // This should not fail.
                 {
                     return false
                 }
                 
-                guard let rest = bits.leftover else
+                guard var partial = leftover else // This should not fail.
                 {
                     return false
                 }
                 
-                guard var partial = leftover else
-                {
-                    return false
-                }
+                let success = partial.pack(bits: rest) // This should not fail.
+                assert(success)
                 
-                guard partial.pack(bits: rest) else
-                {
-                    return false
-                }
-                
-                guard partial.byteAligned else
-                {
-                    return false
-                }
+                assert(partial.byteAligned)
                 
                 let byte = partial.data
                 buffer.append(byte)
@@ -436,34 +426,29 @@ public struct Bits: MaybeDatable
 
             {
                 var mbits = bits // make a mutable copy
-                guard let aligning = mbits.unpack(bits: neededForAlignment) else
+                guard let aligning = mbits.unpack(bits: neededForAlignment) else // This should not fail.
                 {
                     return false
                 }
                 
-                guard pack(bits: aligning) else {
-                    return false
-                }
+                let success1 = pack(bits: aligning) // This should not fail.
+                assert(success1)
                 
-                guard pack(bits: mbits) else {
-                    return false
-                }
+                let success2 = pack(bits: mbits) // This should not fail.
+                assert(success2)
                 
                 return true
             }
             else if var partial = leftover // bits.count < neededForAlignment - Case 2.c - we have bits and we are adding bits, but not enough for alignment - note this implies we are adding just bits and no bytes
             {
-                guard bits.buffer.count == 0 else
-                {
-                    return false
-                }
+                assert(bits.buffer.count == 0)
                 
-                guard let rest = bits.leftover else
+                guard let rest = bits.leftover else // This should not fail.
                 {
                     return false
                 }
                                                 
-                guard partial.pack(bits: rest) else
+                guard partial.pack(bits: rest) else // This should not fail.
                 {
                     return false
                 }
@@ -474,21 +459,16 @@ public struct Bits: MaybeDatable
             }
             else // bits.count < neededForAlignment, leftover == nil - Case 2.d - we have nothing and we are adding bits, but not enough for alignment - note this implies we are adding just bits and no bytes
             {
-                guard bits.buffer.count == 0 else
-                {
-                    return false
-                }
+                assert(bits.buffer.count == 0)
                 
-                guard let rest = bits.leftover else
+                guard let rest = bits.leftover else // This should not fail.
                 {
                     return false
                 }
 
                 var partial = SimpleBits()
-                guard partial.pack(bits: rest) else
-                {
-                    return false
-                }
+                let success = partial.pack(bits: rest)
+                assert(success)
                 
                 leftover = partial
                 
@@ -504,25 +484,15 @@ public struct Bits: MaybeDatable
             return nil
         }
         
-        guard result.count == 1 else
+        assert(result.count == 1)
+        assert(result.buffer.count == 0)
+        
+        guard var bits = result.leftover else // This should not fail.
         {
             return nil
         }
         
-        guard result.buffer.count == 0 else
-        {
-            return nil
-        }
-        
-        guard var bits = result.leftover else
-        {
-            return nil
-        }
-        
-        guard bits.count == 1 else
-        {
-            return nil
-        }
+        assert(bits.count == 1)
         
         return bits.unpackBit()
     }
@@ -544,7 +514,7 @@ public struct Bits: MaybeDatable
             // Case 1.a - we have just bytes and we need just bytes
             if bits % 8 == 0 // This also covers the case where bits == 8
             {
-                guard let bytes = unpack(bytes: bits/8) else
+                guard let bytes = unpack(bytes: bits/8) else // This should not fail.
                 {
                     return nil
                 }
@@ -554,29 +524,30 @@ public struct Bits: MaybeDatable
             else if bits < 8 // Case 1.b - we have just bytes and we need bits from just the first byte
             {
                 // Get the first byte
-                guard let data = unpack(bytes: 1) else
+                guard let data = unpack(bytes: 1) else // This should not fail.
                 {
                     return nil
                 }
+                
+                assert(data.count == 1)
 
                 // Working with a single byte is a job for SimpleBits
-                guard var bytebits = SimpleBits(data: data) else
-                {
-                    return nil
-                }
+                var bytebits = SimpleBits(byte: data[0])
 
-                guard let result = bytebits.unpack(bits: bits) else
+                guard let result = bytebits.unpack(bits: bits) else // This should not fail.
                 {
                     return nil
                 }
                 
                 let saved = buffer
-                guard leftover == nil else {return nil}
+                assert(leftover == nil)
                 
                 clear()
                 
-                guard pack(bits: Bits(data: nil, bits: bytebits)) else {return nil}
-                guard pack(bytes: saved) else {return nil}
+                let success1 = pack(bits: Bits(data: nil, bits: bytebits)) // This should not fail
+                assert(success1)
+                let success2 = pack(bytes: saved) // This should not fail.
+                assert(success2)
                 
                 return Bits(data: nil, bits: result)
             }
@@ -587,23 +558,21 @@ public struct Bits: MaybeDatable
                 
                 // This case decomposes into Case 1.a, followed by Case 1.b
                 // Execute Case 1.a
-                guard let bytesResult = unpack(bytes: bytes) else
+                guard let bytesResult = unpack(bytes: bytes) else // This should not fail.
                 {
                     return nil
                 }
 
                 // Execute Case 1.b
-                guard let bitsResult = unpack(bits: remainingBits) else
+                guard let bitsResult = unpack(bits: remainingBits) else // This should not fail.
                 {
                     return nil
                 }
 
                 // Combine the results
                 var result = Bits(data: bytesResult)
-                guard result.pack(bits: bitsResult) else
-                {
-                    return nil
-                }
+                let success1 = result.pack(bits: bitsResult) // This should not fail.
+                assert(success1)
                 
                 return result
             }
@@ -613,12 +582,12 @@ public struct Bits: MaybeDatable
             // We have already checked above that bits < count.
             
             // Getting bits from bits (without bytes) is a job for SimpleBits
-            guard var bs = leftover else
+            guard var bs = leftover else // This should not fail.
             {
                 return nil
             }
 
-            guard let result = bs.unpack(bits: bits) else
+            guard let result = bs.unpack(bits: bits) else // This should not fail.
             {
                 return nil
             }
@@ -630,7 +599,7 @@ public struct Bits: MaybeDatable
         }
         else // Case 3 - we have both bytes and bits
         {
-            guard let rest = leftover else
+            guard let rest = leftover else // This should not fail.
             {
                 return nil
             }
@@ -645,16 +614,14 @@ public struct Bits: MaybeDatable
                 leftover = nil
 
                 // Execute Case 1
-                guard let result = unpack(bits: bits) else
+                guard let result = unpack(bits: bits) else // This should not fail.
                 {
                     return nil
                 }
                 
                 // Repack the bits portion
-                guard pack(bits: Bits(data: nil, bits: saved)) else
-                {
-                    return nil
-                }
+                let success = pack(bits: Bits(data: nil, bits: saved)) // This should not fail.
+                assert(success)
                 
                 return result
             }
@@ -669,22 +636,20 @@ public struct Bits: MaybeDatable
                 
                 // Execute Case 3.a
                 // bytesBitCount is the number of bits we can retrieve from just the bytes portion
-                guard var result = unpack(bits: bytesBitCount) else
+                guard var result = unpack(bits: bytesBitCount) else // This should not fail.
                 {
                     return nil
                 }
                 
                 // Execute Case 2 to get the remaining bits needed
-                guard let additional = unpack(bits: bits - bytesBitCount) else
+                guard let additional = unpack(bits: bits - bytesBitCount) else // This should not fail.
                 {
                     return nil
                 }
 
                 // Combine the results
-                guard result.pack(bits: additional) else
-                {
-                    return nil
-                }
+                let success = result.pack(bits: additional)
+                assert(success)
                 
                 return result
             }

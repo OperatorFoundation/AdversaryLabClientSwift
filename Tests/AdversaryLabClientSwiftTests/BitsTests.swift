@@ -3,7 +3,7 @@ import XCTest
 
 final class BitsTests: XCTestCase
 {
-    // SimpleBits tests
+    //MARK: SimpleBits tests
     func testSimpleBits_FailableInit()
     {
         // Should not fail
@@ -21,6 +21,17 @@ final class BitsTests: XCTestCase
         // Should fail
         let sb4 = SimpleBits(data: Data(array: [0x0A, 0x0B]))
         XCTAssertNil(sb4)        
+    }
+    
+    func testSimpleBits_EmptyData()
+    {
+        let correct = Data()
+        
+        let sb1 = SimpleBits()
+        let data1 = sb1.data
+        XCTAssertNotNil(data1)
+        XCTAssertEqual(data1.count, 0)
+        XCTAssertEqual(data1, correct)
     }
     
     func testSimpleBits_Data()
@@ -284,7 +295,66 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(byte, 0b11111111)
     }
     
-    // Bits tests
+    //MARK: Test SimplBits+MaybeIntable
+    
+    func testSimplBits_MaybeIntable()
+    {
+        let correctUint: UInt = 15
+        let correctUint8: UInt8 = 15
+        let correctUint16: UInt16 = 15
+        let correctUint32: UInt32 = 15
+        let correctUint64: UInt64 = 15
+
+        let correctInt: Int = 15
+        let correctInt8: Int8 = 15
+        let correctInt16: Int16 = 15
+        let correctInt32: Int32 = 15
+        let correctInt64: Int64 = 15
+        
+        let sb1 = SimpleBits(byte: 0x0F)
+        
+        let uint = sb1.uint
+        XCTAssertNotNil(uint)
+        XCTAssertEqual(uint, correctUint)
+        
+        let uint8 = sb1.uint8
+        XCTAssertNotNil(uint8)
+        XCTAssertEqual(uint8!, correctUint8)
+        
+        let uint16 = sb1.uint16
+        XCTAssertNotNil(uint16)
+        XCTAssertEqual(uint16!, correctUint16)
+
+        let uint32 = sb1.uint32
+        XCTAssertNotNil(uint32)
+        XCTAssertEqual(uint32!, correctUint32)
+        
+        let uint64 = sb1.uint64
+        XCTAssertNotNil(uint64)
+        XCTAssertEqual(uint64!, correctUint64)
+        
+        let int = sb1.int
+        XCTAssertNotNil(int)
+        XCTAssertEqual(int, correctInt)
+        
+        let int8 = sb1.int8
+        XCTAssertNotNil(int8)
+        XCTAssertEqual(int8!, correctInt8)
+        
+        let int16 = sb1.int16
+        XCTAssertNotNil(int16)
+        XCTAssertEqual(int16!, correctInt16)
+
+        let int32 = sb1.int32
+        XCTAssertNotNil(int32)
+        XCTAssertEqual(int32!, correctInt32)
+        
+        let int64 = sb1.int64
+        XCTAssertNotNil(int64)
+        XCTAssertEqual(int64!, correctInt64)
+    }
+    
+    //MARK: Bits tests
     func testBitsUnpackBitsEmpty()
     {
         var bits = Bits()
@@ -805,6 +875,47 @@ final class BitsTests: XCTestCase
         XCTAssertEqual(int8, Int8(-3))
     }
     
+    // MARK: Bits tests
+    func testBits_EmptyData()
+    {
+        let correct = Data()
+        
+        let b1 = Bits()
+        let data1 = b1.data
+        XCTAssertNotNil(data1)
+        XCTAssertEqual(data1.count, 0)
+        XCTAssertEqual(data1, correct)
+    }
+    
+    func testBits_EmptyUnpackBytes()
+    {
+        var b1 = Bits()
+        let result = b1.unpack(bytes: 1)
+        XCTAssertNil(result)
+    }
+
+    func testBits_UnpackBytesZero()
+    {
+        var b1 = Bits()
+        let result = b1.unpack(bytes: 0)
+        XCTAssertNil(result)
+    }
+
+    func testBits_UnpackBytesOverflow()
+    {
+        var b1 = Bits(data: Data(array: [0xBB, 0xCC]))
+        let result = b1.unpack(bytes: 3)
+        XCTAssertNil(result)
+    }
+    
+    func testBits_PackEmpty()
+    {
+        var b1 = Bits()
+        let b2 = Bits()
+        let success = b1.pack(bits: b2)
+        XCTAssertTrue(success)
+    }
+    
     func testBitsIntableUInt8_0()
     {
         var bits = Bits()
@@ -1147,6 +1258,59 @@ final class BitsTests: XCTestCase
         }
                   
         XCTAssertEqual(correct, result)
+    }
+    
+    func testBits_packBytesAndBits()
+    {
+        var bits1 = Bits()
+        let data1: Data = Data(array: [0x08, 0x00])
+
+        // Construct a Bits with both bytes and bits
+        guard bits1.pack(bytes: data1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        guard bits1.pack(bit: 1) else
+        {
+            XCTFail()
+            return
+        }
+        
+        // Construct a Bits with just bytes
+        var bits2 = Bits(data: data1)
+        
+        // Pack
+        guard bits2.pack(bits: bits1) else
+        {
+            XCTFail()
+            return
+        }
+    }
+
+    func testBits_emptyUnpackBit()
+    {
+        var bits1 = Bits()
+
+        let bit = bits1.unpackBit()
+        XCTAssertNil(bit)
+    }
+
+    func testBits_unpackBitsZero()
+    {
+        var bits1 = Bits(data: Data(array: [0xFF]))
+
+        let bit = bits1.unpack(bits: 0)
+        XCTAssertNil(bit)
+    }
+    
+    func testBits_unpackBitsFromMultipleBytes()
+    {
+        var bits1 = Bits(data: Data(array: [0xAB, 0xCD]))
+        
+        let bits = bits1.unpack(bits: 9)
+        XCTAssertNotNil(bits)
     }
     
     func testBits_PackUnpackBytes()

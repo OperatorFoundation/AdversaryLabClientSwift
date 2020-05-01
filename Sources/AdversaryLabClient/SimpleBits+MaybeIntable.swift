@@ -140,11 +140,12 @@ extension SimpleBits: MaybeIntable
         return UInt(uint8)
     }
     
-    public init?(uint8: UInt8) {
-        self.init(data: Data(array: [uint8]))
+    public init(uint8: UInt8) {
+        self.init(byte: uint8)
     }
     
-    public var uint8: UInt8? {
+    public var uint8: UInt8? // This can not actually fail.
+    {
         let offset = UInt8.bitWidth - count
         return UInt8(buffer) >> offset
     }
@@ -159,13 +160,9 @@ extension SimpleBits: MaybeIntable
         self.init(data: Data(array: [ui8]))
     }
     
-    public var uint16: UInt16? {
-        guard let uint8 = self.uint8 else
-        {
-            return nil
-        }
-        
-        return UInt16(uint8)
+    public var uint16: UInt16? // This can not actually fail.
+    {
+        return UInt16(self.uint8!) // This can not actually fail.
     }
     
     public init?(uint32: UInt32) {
@@ -175,16 +172,12 @@ extension SimpleBits: MaybeIntable
         }
 
         let ui8 = UInt8(uint32)
-        self.init(data: Data(array: [ui8]))
+        self.init(byte: ui8)
     }
     
-    public var uint32: UInt32? {
-        guard let uint8 = self.uint8 else
-        {
-            return nil
-        }
-        
-        return UInt32(uint8)
+    public var uint32: UInt32? // This can not actually fail.
+    {
+        return UInt32(self.uint8!) // This can not actually fail.
     }
     
     public init?(uint64: UInt64) {
@@ -194,15 +187,11 @@ extension SimpleBits: MaybeIntable
         }
 
         let ui8 = UInt8(uint64)
-        self.init(data: Data(array: [ui8]))
+        self.init(byte: ui8)
     }
     
-    public var uint64: UInt64? {
-        guard let uint8 = self.uint8 else
-        {
-            return nil
-        }
-        
-        return UInt64(uint8)
+    public var uint64: UInt64? // This can not actually fail.
+    {
+        return UInt64(self.uint8!) // This can not actually fail.
     }
 }
