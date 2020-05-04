@@ -8,10 +8,12 @@
 import Foundation
 import AdversaryLabClient
 import Rethink
+import Dispatch
+import Song
 
 let packetsKey: String = "Packets"
 
-public struct RawPacket {
+public struct RawPacket: Codable {
     let connection: String
     let ip_packet: Data
     let tcp_packet: Data
@@ -43,12 +45,10 @@ public struct Client
         print("addtrainpk")
         let connID = connectionID()
         
-        guard let EthernetPacket = conn.Incoming.Ethernet else { return }
-        guard let IPpacket = conn.Incoming.IPv4 else { return }
-        guard let TCPsegment = conn.Incoming.TCP else { return }
+        guard let EthernetPacket = conn.Incoming.ethernet else { return }
+        guard let IPpacket = conn.Incoming.ipv4 else { return }
+        guard let TCPsegment = conn.Incoming.tcp else { return }
         
-        
-        //conn.Incoming?.TCP.
         let rawPacket: ReDocument = [
             "connection": connID,
             "ip_packet": EthernetPacket.payload,
@@ -60,60 +60,61 @@ public struct Client
             "handshake": true //true because add train is only called for handshake packets
         ]
 
+        R.dbCreate(transport).run(connection) { response in
+            guard !response.isError else { return }
 
-            R.dbCreate(transport).run(connection) { response in
+            R.db(transport).tableCreate(packetsKey).run(self.connection) { response in
                 guard !response.isError else { return }
-
-                R.db(transport).tableCreate(packetsKey).run(self.connection) { response in
-                    guard !response.isError else { return }
-                    
-                    
-                    R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection) { response in
-                        guard !response.isError else { return }
-                        
-                        
-                    }
-                }
                 
+                R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection) { response in
+                    guard !response.isError else { return }
+                }
             }
-        
-        
-//                    R.db(databaseName).table(tableName).indexWait().run(connection) { response in
-//                        assert(!response.isError, "Failed to wait for index: \(response)")
-//
-//                        // Insert 1000 documents
-//                        var docs: [ReDocument] = []
-//                        for i in 0..<1000 {
-//                            docs.append(["foo": "bar", "id": i])
-//                        }
-//
-//                        R.db(databaseName).table(tableName).insert(docs).run(connection) { response in
-//                            assert(!response.isError, "Failed to insert data: \(response)")
-//
-//                            R.db(databaseName).table(tableName).filter({ r in return r["foo"].eq(R.expr("bar")) }).run(connection) { response in
-//                                ...
-//                            }
-//
-//                            R.db(databaseName).table(tableName).count().run(connection) { response in
-//                                ...
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-        
-        
-        
+        }
     }
 
-    func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
+    func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets, lastPacket: Bool, lock: DispatchGroup)
     {
-        print("addrawtrainpk")
+        DispatchQueue.main.async
+        {
+            print("add raw train packet")
+            if lastPacket
+            {
+                lock.leave()
+                return
+            }
+        }
     }
-
-
     
+    func AddTrainPacketSong(transport: String, allowBlock: Bool, conn: ConnectionPackets)
+    {
+        print("addtrainpk")
+        let connID = connectionID()
+        
+        guard let EthernetPacket = conn.Incoming.ethernet else { return }
+        guard let IPpacket = conn.Incoming.ipv4 else { return }
+        guard let TCPsegment = conn.Incoming.tcp else { return }
+        
+        guard  let tcp_packet = IPpacket.payload, let payload = TCPsegment.payload else { return }
+        let rawPacket = RawPacket(
+            connection: connID,
+            ip_packet: EthernetPacket.payload,
+            tcp_packet: tcp_packet,
+            payload: payload,
+            timestamp: conn.Incoming.timestamp,
+            allow_block: allowBlock,
+            in_out: true, //true = incoming
+            handshake: true //true because add train is only called for handshake packets
+        )
+
+        let songEncoder = SongEncoder()
+        if let encodedBytes = try? songEncoder.encode(rawPacket)
+        {
+            let encoded = String(data: encodedBytes)
+            print("Song Encoded:")
+            print(encoded)
+        }
+    }
 }
 
 public func Connect(callback: @escaping (Client?) -> Void)
@@ -134,11 +135,10 @@ public func Connect(callback: @escaping (Client?) -> Void)
     }
 }
     
-public func connectionID() -> String {
+public func connectionID() -> String
+{
     let timestampMicrosecs = Date().timeIntervalSince1970
     return timestampMicrosecs.string
-    
-    
 }
 
 

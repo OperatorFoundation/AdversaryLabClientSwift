@@ -20,6 +20,24 @@
         }
       },
       {
+        "package": "Song",
+        "repositoryURL": "https://github.com/OperatorFoundation/Song.git",
+        "state": {
+          "branch": null,
+          "revision": "94105d5024b6aa515bac6136dbe29c08535ce60f",
+          "version": "0.0.6"
+        }
+      },
+      {
+        "package": "swift-ast",
+        "repositoryURL": "https://github.com/yanagiba/swift-ast",
+        "state": {
+          "branch": null,
+          "revision": "e8507d78b32dbd33ea5ea975bbbc82b7613870a1",
+          "version": "0.19.9"
+        }
+      },
+      {
         "package": "SwiftHexTools",
         "repositoryURL": "https://github.com/OperatorFoundation/SwiftHexTools",
         "state": {

@@ -60,15 +60,36 @@ public struct Packet
 {
     public let rawBytes: Data
     public let timestamp: Int //time in milliseconds since unix epoch
-    public var Ethernet: Ethernet?
-    public var IPv4: IPv4?
-    public var TCP: TCP?
-    public var UDP: UDP?
+    public var ethernet: Ethernet?
+    public var ipv4: IPv4?
+    public var tcp: TCP?
+    public var udp: UDP?
 
     public init(rawBytes: Data) {
         self.rawBytes = rawBytes
         self.timestamp = Int(Date().timeIntervalSince1970 * 1e3) //converting from seconds to milliseconds
         
+        if let ethernetPacket = Ethernet(data: rawBytes)
+        {
+            self.ethernet = ethernetPacket
+            if let IPv4Packet = IPv4(data: ethernetPacket.payload)
+            {
+                self.ipv4 = IPv4Packet
+                
+                if let payload = IPv4Packet.payload
+                {
+                    if let TCPsegment = TCP(data: payload)
+                    {
+                        self.tcp = TCPsegment
+                    }
+                    
+                    if let UDPsegment = UDP(data: payload)
+                    {
+                        self.udp = UDPsegment
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -129,7 +150,7 @@ public struct IPv4
     public let sourceAddress: Data //4 bytes
     public let destinationAddress: Data //4 bytes
     public let options: Data? //up to 32 bytes
-    public let payload: Data
+    public let payload: Data?
 }
 
 public struct IPv6
@@ -471,7 +492,7 @@ extension IPv4: MaybeDatable
         guard let payload = bits.unpack(bytes: Int(bits.count/8)) else { return nil }
         self.payload = payload
         print("payload:")
-        printDataBytes(bytes: self.payload, hexDumpFormat: true, seperator: "", decimal: false)
+        printDataBytes(bytes: payload, hexDumpFormat: true, seperator: "", decimal: false)
 
     }
 
@@ -496,7 +517,10 @@ extension IPv4: MaybeDatable
         if let optionsData = options {
             result.append(optionsData)
         }
-        result.append(payload)
+        if let realpayload = payload
+        {
+            result.append(realpayload)
+        }
         
         return result
     }
