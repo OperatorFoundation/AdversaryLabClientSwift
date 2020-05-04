@@ -20,14 +20,20 @@ class State
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
     let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
     var debug_packetCount = 0
-    var lab: Client?
+    var lab: Client
     let transport: String
+    let port: UInt16
     var lock: DispatchGroup
+    var recording: Bool
     
-    init(transport: String)
+    init(transport: String, port: UInt16, client: Client)
     {
         self.transport = transport
+        self.port = port
+        self.lab = client
+        
         self.lock = DispatchGroup()
+        self.recording = true
     }    
     
     func listenForDataCategory()
@@ -62,74 +68,45 @@ class State
         allowBlockChannel.enqueue(allowBlock)
     }
     
-    func capture(transport: String, port: String)
-    {
-        print("-> Connecting to server...")
+    func capture()
+    {        
+        #if os(OSX)
+        let deviceName: String = "en0"
+        #elseif os(Linux)
+        let deviceName: String = "ens18"
+        #else
+        let deviceName: String = "eth0"
+        #endif
         
-        Connect
+        let packetChannel = Queue<Packet>()
+        switch sourceReadFromFile
         {
-            maybeClient in
+            case 1 :
+                guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
+                {
+                    print("-> Error opening file")
+                    return
+                }
+                
+                print("readPkts file")
+                self.readPackets(source: packetSource, dest: packetChannel, port: port)
             
-            self.lab = maybeClient
-            print("connect callback called")
-            guard let client = maybeClient else { return }
-            print("Connected.")
-            
-            #if os(OSX)
-            let deviceName: String = "en0"
-            #elseif os(Linux)
-            let deviceName: String = "ens18"
-            #else
-            let deviceName: String = "eth0"
-            #endif
-            
-            let packetChannel = Queue<Packet>()
-            switch sourceReadFromFile
-            {
-                case 1 :
-                    guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
-                    {
-                        print("-> Error opening file")
-                        return
-                    }
-                    self.queue.async
-                    {
-                        print("readPkts file")
-                        self.readPackets(source: packetSource, dest: packetChannel)
-                    }
-                    
-                default :
-                    guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
-                    {
-                        print("-> Error opening network device")
-                        return
-                    }
-                    
-                    self.queue.async
-                    {
-                        print("readPkts interface")
-                        self.readPackets(source: packetSource, dest: packetChannel)
-                    }
-            }
-            
-            guard let selectedPort = UInt16(port) else
-            {
-                print("selPort")
-                return
-            }
-            
-            self.queue.async
-            {
-                print("capPort")
-                self.capturePort(selectedPort)
-            }
+            default :
+                guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
+                {
+                    print("-> Error opening network device")
+                    return
+                }
+                
+                print("readPkts interface")
+                self.readPackets(source: packetSource, dest: packetChannel, port: port)
         }
     }
     
-    func readPackets(source: SwiftPCAP.Base, dest: Queue<Packet>)
+    func readPackets(source: SwiftPCAP.Base, dest: Queue<Packet>, port: UInt16)
     {
         print("read packets")
-        while true
+        while self.recording
         {
             let bytes = source.nextPacket()
             
@@ -155,7 +132,7 @@ class State
                 
                 if thisPacket.tcp != nil
                 {
-                    dest.enqueue(thisPacket)
+                    capturePort(thisPacket, port)
                 }
             }
         }
@@ -180,37 +157,18 @@ class State
         print("\n")
     }
     
-    func capturePort(_ port: UInt16)
+    func capturePort(_ packet: Packet, _ port: UInt16)
     {
         print("-> Capturing port \(port)")
+                
+        guard let conn = NewConnection(packet: packet) else { return }
+        guard conn.CheckPort(port: port) else { return }
         
-        var count = UInt16(captured.count)
+        recordRawPacket(packet, port)
         
-        while allowBlockChannel.isEmpty
+        if packet.tcp?.payload != nil
         {
-            if let packet = packetChannel.dequeue()
-            {
-                guard let conn = NewConnection(packet: packet) else { continue }
-                
-                
-                guard conn.CheckPort(port: port) else
-                {
-                    continue
-                }
-                
-                recordRawPacket(packet, port)
-                
-                if packet.tcp?.payload != nil
-                {
-                    recordPacket(packet, port)
-                    
-                    let newCount = UInt16(captured.count)
-                    if newCount > count
-                    {
-                        count = newCount
-                    }
-                }
-            }
+            recordPacket(packet, port)
         }
     }
     
@@ -268,41 +226,35 @@ class State
     
     func saveCaptured()
     {
-        
         print("-> Saving captured raw connection packets... ")
         var buffer: [ConnectionPackets] = []
         var count = 0
         
-        while allowBlockChannel.isEmpty
+        if !recordable.isEmpty
         {
-            if !recordable.isEmpty
+            print("!")
+            guard let connPackets = recordable.dequeue() else
             {
-                print("!")
-                guard let connPackets = recordable.dequeue() else
+                print(".")
+                return
+            }
+            
+            if let allowBlock = maybeAllowBlock
+            {
+                print("**")
+                guard let allowBlock = maybeAllowBlock else
                 {
-                    print(".")
-                    continue
+                    print("-")
+                    return
                 }
                 
-                if maybeAllowBlock == nil
-                {
-                    print("+")
-                    buffer.append(connPackets)
-                }
-                else
-                {
-                    print("**")
-                    guard let allowBlock = maybeAllowBlock else
-                    {
-                        print("-")
-                        continue
-                    }
-                    
-                    print("*")
-                    if let client = lab {
-                        client.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
-                    }
-                }
+                print("*")
+                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
+            }
+            else
+            {
+                print("+")
+                buffer.append(connPackets)
             }
         }
         
@@ -317,9 +269,7 @@ class State
         for packet in buffer
         {
             print("-> Saving complete connections. --<-@")
-            if let client = lab {
-                client.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
-            }
+            lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
         }
         
         if rawCaptured.count == 0
@@ -331,17 +281,13 @@ class State
         for (index, rawConnection) in rawCaptured.enumerated()
         {
             print("-> Saving complete raw connections. --<-@")
-            if let client = lab
+            var last: Bool = false
+            if index == (rawCaptured.count - 1)
             {
-                var last: Bool = false
-                if index == (rawCaptured.count - 1) {
-                    last = true
-                }
-                client.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value, lastPacket: last, lock: self.lock)
-            } else {
-                self.lock.leave()
-                return
+                last = true
             }
+            
+            lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value, lastPacket: last, lock: self.lock)
         }
         
         // Usually we want both incoming and outgoingf packets
@@ -363,10 +309,7 @@ class State
                 if connection.Outgoing == nil
                 {
                     print("-> Saving incomplete connection.  --<-@")
-                    if let client = lab
-                    {
-                        client.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
-                    }
+                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
                 }
             }
         }

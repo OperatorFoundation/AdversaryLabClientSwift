@@ -78,47 +78,52 @@ func main()
     
     let transport = CommandLine.arguments[1]
     let port = CommandLine.arguments[2]
-    
-    let state = State(transport: transport)
-    
-    signal(SIGINT, SIG_IGN)
-    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-    source.setEventHandler
+
+    guard let selectedPort = UInt16(port) else
     {
-        print("event handler happened")
-        print("saveCaptured")
-        state.allowBlockChannel.enqueue(true)
-        state.saveCaptured()
-        exit(0)
+        print("selPort")
+        return
     }
-    source.resume()
     
     if CommandLine.arguments.count == 3
     {
-        // Buffering Mode
-        // The user has not yet indicated which category this data belongs to.
-        // Buffer the data until the user enters 'allowed' or 'blocked'.
-        state.queue.async
-        {
-                state.listenForDataCategory()
-        }
-        
         print("3 args")
-        state.capture(transport: transport, port: port)
-        dispatchMain()
+        
+        Connect
+        {
+            maybeClient in
+            
+            guard let client = maybeClient else
+            {
+                print("Could not connect to RethinkDB")
+                return
+            }
+          
+            let state = startCapture(transport: transport, port: selectedPort, client: client)
+            
+            // Buffering Mode
+            // The user has not yet indicated which category this data belongs to.
+            // Buffer the data until the user enters 'allowed' or 'blocked'.
+            state.queue.async
+            {
+                    state.listenForDataCategory()
+            }
+        }
     }
     else if CommandLine.arguments.count == 4
     {
+        let allowBlock: Bool
+        
         // Streaming Mode
         // The user has indicated how this data should be categorized.
         // Save the data as we go using the indicated category.
         if CommandLine.arguments[3] == "allow"
         {
-            state.maybeAllowBlock = true
+            allowBlock = true
         }
         else if CommandLine.arguments[3] == "block"
         {
-            state.maybeAllowBlock = false
+            allowBlock = false
         }
         else
         {
@@ -127,14 +132,51 @@ func main()
         }
         
         print("4 args")
-        state.capture(transport: transport, port: port)
-        dispatchMain()
+        
+        Connect
+        {
+            maybeClient in
+            
+            guard let client = maybeClient else
+            {
+                print("Could not connect to RethinkDB")
+                return
+            }
+          
+            let state = startCapture(transport: transport, port: selectedPort, client: client)
+            state.maybeAllowBlock = allowBlock
+        }
     }
     else
     {
         usage()
         return
     }
+}
+
+func startCapture(transport: String, port: UInt16, client: Client) -> State
+{
+    let state = State(transport: transport, port: port, client: client)
+    
+    signal(SIGINT, SIG_IGN)
+    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+    source.setEventHandler
+    {
+        print("event handler happened")
+        print("saveCaptured")
+        state.recording = false
+        if state.allowBlockChannel.isEmpty
+        {
+            state.allowBlockChannel.enqueue(true)
+        }
+        state.saveCaptured()
+        exit(0)
+    }
+    source.resume()
+    
+    state.capture()
+    
+    return state
 }
 
 func usage()
