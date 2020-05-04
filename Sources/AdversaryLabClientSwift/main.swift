@@ -4,7 +4,6 @@ import SwiftPCAP
 import SwiftQueue
 import AdversaryLabClient
 
-
 //fix argument parsing to include reading from file
 //hack for reading from pcap file without parsing command line args...
 var filePath: String = ""
@@ -12,8 +11,7 @@ let sourceReadFromFile: UInt8 = 0 //0= read from interface (default), 1=read fro
 let pcapFileName: String = "PCAPfiles/tcp-ethereal-file1.trace.pcap" //path starting from project base directory
 //end hack
 
-
-//import Rethink
+import Rethink
 
 struct Connection: Hashable
 {
@@ -21,16 +19,19 @@ struct Connection: Hashable
     let big: UInt16
 }
 
-func NewConnection(packet: TCP) -> Connection
+func NewConnection(packet: Packet) -> Connection?
 {
-    if packet.sourcePort < packet.destinationPort
+    guard let TCPsegment = packet.TCP else { return nil }
+    
+    if TCPsegment.sourcePort < TCPsegment.destinationPort
     {
-        return Connection(small: packet.sourcePort, big: packet.destinationPort)
+        return Connection(small: TCPsegment.sourcePort, big: TCPsegment.destinationPort)
     }
     else
     {
-        return Connection(small: packet.destinationPort, big: packet.sourcePort)
+        return Connection(small: TCPsegment.destinationPort, big: TCPsegment.sourcePort)
     }
+    
 }
 
 extension Connection
@@ -41,21 +42,13 @@ extension Connection
     }
 }
 
-
-
-
-
-
-
-
-
 class State
 {
     var maybeAllowBlock: Bool? = nil
     let allowBlockChannel: Queue<Bool> = Queue<Bool>()
     var captured: [Connection:ConnectionPackets] = [:]
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
-    let packetChannel: Queue<TCP> = Queue<TCP>()
+    let packetChannel: Queue<Packet> = Queue<Packet>()
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
     let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
     var debug_packetCount = 0
@@ -91,30 +84,34 @@ class State
         // are either allowed or blocked based on user input.
         allowBlockChannel.enqueue(allowBlock)
     }
-
+    
     func capture(transport: String, port: String)
     {
-        print("-> Launching server...")
-
-        guard let lab = Connect() else
-        {
-            print("Connect error!")
-            return
-        }
-
-        print("Connected.")
         
-        #if os(OSX)
-        let deviceName: String = "en0"
-        #elseif os(Linux)
-        let deviceName: String = "ens18"
-        #else
-        let deviceName: String = "eth0"
-        #endif
-
-
-        let packetChannel = Queue<TCP>()
-        switch sourceReadFromFile {
+        
+        print("-> Launching server...")
+        
+        //        guard let lab = Connect() else
+        //        {
+        //            print("Connect error!")
+        //            return
+        //        }
+        Connect() {
+            maybeClient in
+            print("connect callback called")
+            guard let client = maybeClient else { return }
+            print("Connected.")
+            
+            #if os(OSX)
+            let deviceName: String = "en0"
+            #elseif os(Linux)
+            let deviceName: String = "ens18"
+            #else
+            let deviceName: String = "eth0"
+            #endif
+            
+            let packetChannel = Queue<TCP>()
+            switch sourceReadFromFile {
             case 1 :
                 guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
                 {
@@ -122,11 +119,11 @@ class State
                     return
                 }
                 self.queue.async
-                {
-                    print("readPkts file")
-                    self.readPackets(source: packetSource, dest: packetChannel)
+                    {
+                        print("readPkts file")
+                        self.readPackets(source: packetSource, dest: packetChannel)
                 }
-            
+                
             default :
                 guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
                 {
@@ -134,41 +131,37 @@ class State
                     return
                 }
                 self.queue.async
-                {
-                    print("readPkts interface")
-                    self.readPackets(source: packetSource, dest: packetChannel)
+                    {
+                        print("readPkts interface")
+                        self.readPackets(source: packetSource, dest: packetChannel)
                 }
+            }
             
+            
+            guard let selectedPort = UInt16(port) else
+            {
+                print("selPort")
+                return
+            }
+            
+            self.queue.async
+                {
+                    print("capPort")
+                    self.capturePort(selectedPort)
+            }
+            print("saveCaptured")
+            self.saveCaptured(client, transport)
         }
-
-        
-        
-        
-        guard let selectedPort = UInt16(port) else
-        {
-            print("selPort")
-            return
-        }
-
-        queue.async
-        {
-            print("capPort")
-            self.capturePort(selectedPort)
-        }
-        print("saveCaptured")
-        saveCaptured(lab, transport)
-        
-        
-        
     }
-
+    
     func readPackets(source: SwiftPCAP.Base, dest: Queue<TCP>)
     {
+        print("read packets")
         while true
         {
             let bytes = source.nextPacket()
-            let timestampMicrosecs = Date().timeIntervalSince1970 //* 1e6
-            //let currentPacket = Packet()
+            //let timestampMillisecs = Int(Date().timeIntervalSince1970 * 1e3) //converting from seconds to milliseconds
+            //let currentPacket = Packet(rawBytes: Data(array: bytes))
             
             if bytes.count == 0
             {
@@ -187,7 +180,7 @@ class State
                 
                 debug_packetCount += 1
                 print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
-                print("timestamp: " + String(format: "%F", timestampMicrosecs))
+                //print("timestamp: " + String(format: "%F", timestampMillisecs))
                 var count = 0
                 for byte in bytes{
                     print(String(format: "%02x", byte), terminator: " ")
@@ -211,20 +204,20 @@ class State
                             
                             if ippacket.protocolNumber == 0x06 {
                                 if let tcpSegment = TCP(data: ippacket.payload){
-                                     print("\nTCP parse success!\n")
-                                     
+                                    print("\nTCP parse success!\n")
+                                    
                                 }else{
-                                     print("\nno parse TCP\n")
-                                 }
+                                    print("\nno parse TCP\n")
+                                }
                             }
                             
                             if ippacket.protocolNumber == 0x11 {
                                 if let udpSegment = UDP(data: ippacket.payload){
-                                     print("\nUDP parse success!\n")
-                                     
+                                    print("\nUDP parse success!\n")
+                                    
                                 }else{
-                                     print("\nno parse UDP\n")
-                                 }
+                                    print("\nno parse UDP\n")
+                                }
                             }
                             
                             
@@ -237,43 +230,45 @@ class State
                         print("^^^^not IPv4 packet^^^^")
                         print("Ethernet Packet Type: \(epacket.type.rawValue)")
                     }
-
-
+                    
+                    
                 }else {
                     print("\nethernet parse FAIL\n")
                 }
                 
-//                if let packet = TCP(data: Data(bytes))
-//                {
-//                    dest.enqueue(packet)
-//
-//                }
+                //                if let packet = TCP(data: Data(bytes))
+                //                {
+                //                    dest.enqueue(packet)
+                //
+                //                }
             }
         }
     }
-
+    
     func capturePort(_ port: UInt16)
     {
         print("-> Capturing port \(port)")
-
+        
         var count = UInt16(captured.count)
-
+        
         while allowBlockChannel.isEmpty
         {
             if let packet = packetChannel.dequeue()
             {
-                let conn = NewConnection(packet: packet)
+                guard let conn = NewConnection(packet: packet) else { continue }
+                
+                
                 guard conn.CheckPort(port: port) else
                 {
                     continue
                 }
-
+                
                 recordRawPacket(packet, port)
-
-                if packet.payload != nil
+                
+                if packet.TCP?.payload != nil
                 {
                     recordPacket(packet, port)
-
+                    
                     let newCount = UInt16(captured.count)
                     if newCount > count
                     {
@@ -283,14 +278,17 @@ class State
             }
         }
     }
-
-    func recordRawPacket(_ packet: TCP, _ port: UInt16)
+    
+    func recordRawPacket(_ packet: Packet, _ port: UInt16)
     {
         print("Entered recordRawPacket")
-        let conn = NewConnection(packet: packet)
-        let incoming = packet.destinationPort == port
+        guard let conn = NewConnection(packet: packet) else { return }
+        //let incoming = packet.destinationPort == port
+        guard let TCPsegment = packet.TCP else { return }
+        let incoming = TCPsegment.destinationPort == port
+        
         var connPackets = rawCaptured[conn, default: RawConnectionPackets()]
-
+        
         if incoming {
             connPackets.Incoming.append(packet)
             rawCaptured[conn] = connPackets
@@ -299,14 +297,15 @@ class State
             rawCaptured[conn] = connPackets
         }
     }
-
-    func recordPacket(_ packet: TCP, _ port: UInt16)
+    
+    func recordPacket(_ packet: Packet, _ port: UInt16)
     {
         print("recPkt")
-        let conn = NewConnection(packet: packet)
-        let incoming = packet.destinationPort == port
+        guard let conn = NewConnection(packet: packet) else { return }
+        guard let TCPsegment = packet.TCP else { return }
+        let incoming = TCPsegment.destinationPort == port
         var maybeConnPackets = captured[conn]
-    
+        
         // This is the first packet of the connection
         if maybeConnPackets == nil
         {
@@ -325,13 +324,13 @@ class State
             {
                 connPackets.Outgoing = packet
                 captured[conn] = connPackets
-
+                
                 print("-> .")
                 recordable.enqueue(connPackets)
             }
         }
     }
-
+    
     func saveCaptured(_ lab: Client, _ transport: String)
     {
         print("-> Saving captured raw connection packets... ")
@@ -340,8 +339,8 @@ class State
         
         while allowBlockChannel.isEmpty
         {
-
-
+            
+            
             if !recordable.isEmpty
             {
                 print("!")
@@ -366,7 +365,7 @@ class State
                     }
                     
                     print("*")
-                    AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
+                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
                 }
             }
         }
@@ -380,20 +379,20 @@ class State
         for packet in buffer
         {
             print("-> Saving complete connections. --<-@")
-            AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
+            lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
         }
         
         for (_, rawConnection) in rawCaptured
         {
             print("-> Saving complete raw connections. --<-@")
-            AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection)
+            lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection)
         }
         
         // Usually we want both incoming and outgoingf packets
         // In the case where we know these are blocked connections
         // We want to record the data even when we have not received a response.
         // This is still a valid blocked case. We expect that some blocked connections will behave in this way.
-
+        
         //If the connections in this map are labeled blocked by the user
         print("newAllowBlock is ", allowBlock)
         if allowBlock == false
@@ -408,62 +407,43 @@ class State
                 if connection.Outgoing == nil
                 {
                     print("-> Saving incomplete connection.  --<-@")
-                    AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
+                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
                 }
             }
         }
-
+        
         print("--> We are done saving things to the database. Bye now!\n")
         exit(1)
     }
-    
-    func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
-    {
-        print("addtrainpk")
-    }
-    
-    func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
-    {
-        print("addrawtrainpk")
-    }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 func main()
 {
     do {
         print("Delaying to allow debugger to attach to process...")
+        print("1 second pause to allow debugger to attach....")
         sleep(1)
     }
+    
     print("-> Adversary Lab Client is running...Now in Swift!")
     let state = State()
-
+    
     //https://swift.org/blog/argument-parser/
     //https://github.com/apple/swift-argument-parser/blob/master/Documentation/01%20Getting%20Started.md
     //https://developer.apple.com/documentation/swift/commandline
-
+    
     
     //hack for running pcap files located in the project's directory, makes assumptions about the  DerrivedData path...
     if sourceReadFromFile == 1 {
         let basePath = CommandLine.arguments[0] //path of executable
         var basePathURL = URL(fileURLWithPath: basePath)
         for i in 1...6 { //cd .. to project directory from DerrivedData build directory
-           basePathURL.deleteLastPathComponent()
+            basePathURL.deleteLastPathComponent()
         }
         basePathURL.appendPathComponent(pcapFileName)
         filePath = basePathURL.path
-
+        
         print("Reading Packets from file:")
         print(filePath)
     }
@@ -472,27 +452,28 @@ func main()
     
     
     
-//  //orig code:
+    //  //orig code:
     if CommandLine.arguments.count < 3
     {
         usage()
         return
     }
-
+    
     let transport = CommandLine.arguments[1]
     let port = CommandLine.arguments[2]
-
+    
     if CommandLine.arguments.count == 3
     {
         // Buffering Mode
         // The user has not yet indicated which category this data belongs to.
         // Buffer the data until the user enters 'allowed' or 'blocked'.
         state.queue.async
-        {
-            state.listenForDataCategory()
+            {
+                state.listenForDataCategory()
         }
         print("3 args")
         state.capture(transport: transport, port: port)
+        sleep(0xffffffff)
     }
     else if CommandLine.arguments.count == 4
     {
@@ -514,12 +495,14 @@ func main()
         }
         print("4 args")
         state.capture(transport: transport, port: port)
+        sleep(0xffffffff)
     }
     else
     {
         usage()
         return
     }
+    
 }
 
 func usage()
@@ -534,7 +517,7 @@ func usage()
      [--categorize-as -c BLOCK | ALLOW ] //if omitted buffering mode is assumed otherwise is categorized as specified
      [--ip-address -i IPV4_ADDRESS ] //only include traffic to/from IPV4_ADDRESS
      [--protocol ?PROTOCOL??? ] //only include PROTOCOL
-
+     
      
      
      */

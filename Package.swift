@@ -24,10 +24,10 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "AdversaryLabClient",
-            dependencies: ["SwiftPCAP", "SwiftQueue", "Datable"]),
+            dependencies: ["SwiftPCAP", "SwiftQueue", "Datable", "Rethink"]),
         .target(
             name: "AdversaryLabClientSwift",
-            dependencies: ["SwiftPCAP", "SwiftQueue", "AdversaryLabClient"]),
+            dependencies: ["SwiftPCAP", "SwiftQueue", "AdversaryLabClient", "Rethink"]),
         .testTarget(
             name: "AdversaryLabClientSwiftTests",
             dependencies: ["AdversaryLabClientSwift"]),

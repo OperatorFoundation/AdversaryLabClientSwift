@@ -755,8 +755,6 @@ final class ParserTests: XCTestCase
             XCTAssertEqual(udpSegment.payload, correctPayload)
             
             let udpSegmentData = udpSegment.data
-            print("udp:d")
-            printDataBytes(bytes: udpSegmentData, hexDumpFormat: true, seperator: "", decimal: false)
             XCTAssertEqual(udpSegmentData, correctUDPsegmentBytes)
             
             
