@@ -132,8 +132,6 @@ class State
         while true
         {
             let bytes = source.nextPacket()
-            //let timestampMillisecs = Int(Date().timeIntervalSince1970 * 1e3) //converting from seconds to milliseconds
-            //let currentPacket = Packet(rawBytes: Data(array: bytes))
             
             if bytes.count == 0
             {
@@ -151,22 +149,7 @@ class State
             {
                 debug_packetCount += 1
                 print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
-                //print("timestamp: " + String(format: "%F", timestampMillisecs))
-                var count = 0
-                for byte in bytes
-                {
-                    print(String(format: "%02x", byte), terminator: " ")
-                    count += 1
-                    if count % 8 == 0
-                    {
-                        print(" ", terminator: "")
-                    }
-                    if count % 16 == 0
-                    {
-                        print("")
-                    }
-                }
-                print("\n")
+                printBytes(bytes)
                 
                 let thisPacket = Packet(rawBytes: Data(bytes))
                 
@@ -176,6 +159,25 @@ class State
                 }
             }
         }
+    }
+    
+    func printBytes(_ bytes: [UInt8])
+    {
+        var count = 0
+        for byte in bytes
+        {
+            print(String(format: "%02x", byte), terminator: " ")
+            count += 1
+            if count % 8 == 0
+            {
+                print(" ", terminator: "")
+            }
+            if count % 16 == 0
+            {
+                print("")
+            }
+        }
+        print("\n")
     }
     
     func capturePort(_ port: UInt16)
