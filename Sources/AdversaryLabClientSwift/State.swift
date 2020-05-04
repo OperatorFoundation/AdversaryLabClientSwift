@@ -64,14 +64,10 @@ class State
     
     func capture(transport: String, port: String)
     {
-        print("-> Launching server...")
+        print("-> Connecting to server...")
         
-        //        guard let lab = Connect() else
-        //        {
-        //            print("Connect error!")
-        //            return
-        //        }
-        Connect() {
+        Connect
+        {
             maybeClient in
             
             self.lab = maybeClient
@@ -88,30 +84,32 @@ class State
             #endif
             
             let packetChannel = Queue<Packet>()
-            switch sourceReadFromFile {
-            case 1 :
-                guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
-                {
-                    print("-> Error opening file")
-                    return
-                }
-                self.queue.async
+            switch sourceReadFromFile
+            {
+                case 1 :
+                    guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
+                    {
+                        print("-> Error opening file")
+                        return
+                    }
+                    self.queue.async
                     {
                         print("readPkts file")
                         self.readPackets(source: packetSource, dest: packetChannel)
-                }
-                
-            default :
-                guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
-                {
-                    print("-> Error opening network device")
-                    return
-                }
-                self.queue.async
+                    }
+                    
+                default :
+                    guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
+                    {
+                        print("-> Error opening network device")
+                        return
+                    }
+                    
+                    self.queue.async
                     {
                         print("readPkts interface")
                         self.readPackets(source: packetSource, dest: packetChannel)
-                }
+                    }
             }
             
             guard let selectedPort = UInt16(port) else
@@ -121,9 +119,9 @@ class State
             }
             
             self.queue.async
-                {
-                    print("capPort")
-                    self.capturePort(selectedPort)
+            {
+                print("capPort")
+                self.capturePort(selectedPort)
             }
         }
     }
@@ -141,7 +139,8 @@ class State
             {
                 print("\n\n_", terminator: "")
                 
-                if sourceReadFromFile == 1 { //reading from file and have reached the end of file
+                if sourceReadFromFile == 1 //reading from file and have reached the end of file
+                {
                     print("\n\nEnd of PCAP file reached\n")
                     return
                 }
@@ -150,19 +149,20 @@ class State
             }
             else
             {
-                
-                
                 debug_packetCount += 1
                 print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 //print("timestamp: " + String(format: "%F", timestampMillisecs))
                 var count = 0
-                for byte in bytes{
+                for byte in bytes
+                {
                     print(String(format: "%02x", byte), terminator: " ")
                     count += 1
-                    if count % 8 == 0{
+                    if count % 8 == 0
+                    {
                         print(" ", terminator: "")
                     }
-                    if count % 16 == 0{
+                    if count % 16 == 0
+                    {
                         print("")
                     }
                 }
@@ -174,51 +174,6 @@ class State
                 {
                     dest.enqueue(thisPacket)
                 }
-                
-                
-//                if let epacket = Ethernet(data: Data(bytes)){
-//                    print("\nethernet parse success\n")
-//
-//                    switch epacket.type {
-//                    case .IPv4:
-//                        if let ippacket = IPv4(data: epacket.payload){
-//                            print("\nIP parse success!\n")
-//
-//                            if ippacket.protocolNumber == 0x06 {
-//                                if let tcpSegment = TCP(data: ippacket.payload){
-//                                    print("\nTCP parse success!\n")
-//
-//                                }else{
-//                                    print("\nno parse TCP\n")
-//                                }
-//                            }
-//
-//                            if ippacket.protocolNumber == 0x11 {
-//                                if let udpSegment = UDP(data: ippacket.payload){
-//                                    print("\nUDP parse success!\n")
-//
-//                                }else{
-//                                    print("\nno parse UDP\n")
-//                                }
-//                            }
-//
-//
-//
-//                        } else {
-//                            print("\nno parse IPv4\n")
-//                        }
-//
-//                    default:
-//                        print("^^^^not IPv4 packet^^^^")
-//                        print("Ethernet Packet Type: \(epacket.type.rawValue)")
-//                    }
-//
-//
-//                }else {
-//                    print("\nethernet parse FAIL\n")
-//                }
-                
-
             }
         }
     }
