@@ -98,6 +98,18 @@ public struct SimpleBits: MaybeDatable
             return false
         }
     }
+    
+    public mutating func pack(bool: Bool) -> Bool
+    {
+        if bool
+        {
+            return pack(bit: 1)
+        }
+        else
+        {
+            return pack(bit: 0)
+        }
+    }
 
     public mutating func pack(bits: SimpleBits) -> Bool
     {
@@ -140,6 +152,21 @@ public struct SimpleBits: MaybeDatable
         return result
     }
 
+    public mutating func unpackBool() -> Bool?
+    {
+        guard let bit = unpackBit() else { return nil }
+        
+        switch bit
+        {
+            case 1:
+                return true
+            case 0:
+                return false
+            default:
+                return nil
+        }
+    }
+    
     public mutating func unpack(bits: Int) -> SimpleBits?
     {
         guard bits > 0 else {return nil}
@@ -348,6 +375,18 @@ public struct Bits: MaybeDatable
         return pack(bits: bits)
     }
     
+    public mutating func pack(bool: Bool) -> Bool
+    {
+        if bool
+        {
+            return pack(bit: 1)
+        }
+        else
+        {
+            return pack(bit: 0)
+        }
+    }
+    
     public mutating func pack(bits: Bits) -> Bool
     {
         guard bits.count > 0 else {return true}
@@ -495,6 +534,21 @@ public struct Bits: MaybeDatable
         assert(bits.count == 1)
         
         return bits.unpackBit()
+    }
+    
+    public mutating func unpackBool() -> Bool?
+    {
+        guard let bit = unpackBit() else { return nil }
+        
+        switch bit
+        {
+            case 1:
+                return true
+            case 0:
+                return false
+            default:
+                return nil
+        }
     }
     
     private mutating func clear()
