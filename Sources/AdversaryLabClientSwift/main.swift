@@ -99,6 +99,7 @@ class State
 //        }
         Connect() {
             maybeClient in
+            print("connect callback called")
             guard let client = maybeClient else { return }
             print("Connected.")
             
@@ -443,6 +444,7 @@ func main()
         }
         print("3 args")
         state.capture(transport: transport, port: port)
+        sleep(0xffffffff)
     }
     else if CommandLine.arguments.count == 4
     {
@@ -464,12 +466,14 @@ func main()
         }
         print("4 args")
         state.capture(transport: transport, port: port)
+        sleep(0xffffffff)
     }
     else
     {
         usage()
         return
     }
+        
 }
 
 func usage()
