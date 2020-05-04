@@ -455,14 +455,15 @@ extension IPv4: MaybeDatable
         printDataBytes(bytes: self.destinationAddress, hexDumpFormat: false, seperator: ".", decimal: true)
 
         
-        print("do options exist?")
-        // do options exist?
-        if IHL.int! > 5{
-            //FIX, add code to parse options field
-            print("!! IPv4 parsing, IHL > 5, need to parse options field in IP header")
+        if IHLUint8 > 5 {
+            //options exist if IHL > 5, each IHL point is 32 bits (4 bytes), upto IHL = 15 or 320 bits, 40 bytes
+            guard let options = bits.unpack(bytes: Int((IHLUint8 - 5) * 4)) else { return nil }
+            self.options = options
+            print("options:")
+            printDataBytes(bytes: options, hexDumpFormat: true, seperator: "", decimal: false)
             return nil
         } else {
-            print("no options here")
+            print("options: nil")
             self.options = nil
         }
         

@@ -8,7 +8,7 @@ import AdversaryLabClient
 //fix argument parsing to include reading from file
 //hack for reading from pcap file without parsing command line args...
 var filePath: String = ""
-let sourceReadFromFile: UInt8 = 1 //0= read from interface (default), 1=read from file
+let sourceReadFromFile: UInt8 = 0 //0= read from interface (default), 1=read from file
 let pcapFileName: String = "PCAPfiles/tcp-ethereal-file1.trace.pcap" //path starting from project base directory
 //end hack
 
