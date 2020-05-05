@@ -59,7 +59,7 @@ class State
             }
             else
             {
-                print("-> Received unexpected input for the connection data category please enter 'allowed' or 'blocked':\n \(String(describing: text))")
+                print("-> Received unexpected input for the connection data category please enter 'allow' or 'block':\n \(String(describing: text))")
             }
         }
         
@@ -81,8 +81,8 @@ class State
         let packetChannel = Queue<Packet>()
         switch sourceReadFromFile
         {
-            case 1 :
-                guard let packetSource = try? SwiftPCAP.Offline(path: filePath) else
+            case true :
+                guard let packetSource = try? SwiftPCAP.Offline(path: validPCAPfile) else
                 {
                     print("-> Error opening file")
                     return
@@ -114,10 +114,12 @@ class State
             {
                 print("\n\n_", terminator: "")
                 
-                if sourceReadFromFile == 1 //reading from file and have reached the end of file
+                if sourceReadFromFile //reading from file and have reached the end of file
                 {
-                    print("\n\nEnd of PCAP file reached\n")
-                    return
+                    //fix, is this the correct way to end reading and record to DB?
+                    print("\n\nEnd of PCAP file reached.\n")
+                    print("Press CTRL-C to end and save to database.")
+                    print("Fix so that we save to db automatically")
                 }
                 
                 sleep(1)

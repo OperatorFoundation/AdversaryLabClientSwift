@@ -1,6 +1,5 @@
 // swift-tools-version:5.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 let package = Package(
@@ -19,6 +18,7 @@ let package = Package(
         .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "2.0.0"),
         .package(url: "https://github.com/OperatorFoundation/rethink-swift.git", from: "1.0.0"),
         .package(url: "https://github.com/OperatorFoundation/Song.git", from: "0.0.6"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -28,7 +28,7 @@ let package = Package(
             dependencies: ["SwiftPCAP", "SwiftQueue", "Datable"]),
         .target(
             name: "AdversaryLabClientSwift",
-            dependencies: ["SwiftPCAP", "SwiftQueue", "AdversaryLabClient", "Rethink", "Song"]),
+            dependencies: ["SwiftPCAP", "SwiftQueue", "AdversaryLabClient", "Rethink", "Song", .product(name: "ArgumentParser", package: "swift-argument-parser")]),
         .testTarget(
             name: "AdversaryLabClientSwiftTests",
             dependencies: ["AdversaryLabClientSwift"]),
