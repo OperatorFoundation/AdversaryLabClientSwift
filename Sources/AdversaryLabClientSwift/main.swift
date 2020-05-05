@@ -109,6 +109,7 @@ func main()
                     state.listenForDataCategory()
             }
         }
+        dispatchMain()
     }
     else if CommandLine.arguments.count == 4
     {
@@ -146,6 +147,7 @@ func main()
             let state = startCapture(transport: transport, port: selectedPort, client: client)
             state.maybeAllowBlock = allowBlock
         }
+        dispatchMain()
     }
     else
     {
@@ -158,12 +160,17 @@ func startCapture(transport: String, port: UInt16, client: Client) -> State
 {
     let state = State(transport: transport, port: port, client: client)
     
+    // Ignore default signal handling, which is killing the app
     signal(SIGINT, SIG_IGN)
+    
     let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
     source.setEventHandler
     {
         print("event handler happened")
-        print("saveCaptured")
+        
+        // Restore default signal handling, which means killing the app
+        signal(SIGINT, SIG_DFL)
+        
         state.recording = false
         if state.allowBlockChannel.isEmpty
         {

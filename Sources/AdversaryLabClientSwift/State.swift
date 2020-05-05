@@ -226,13 +226,14 @@ class State
     
     func saveCaptured()
     {
-        print("-> Saving captured raw connection packets... ")
+        print("-> Saving captured packets... ")
+        print("recordable: \(!recordable.isEmpty)")
         var buffer: [ConnectionPackets] = []
         var count = 0
         
         if !recordable.isEmpty
         {
-            print("!")
+            print("Saving complete connections")
             guard let connPackets = recordable.dequeue() else
             {
                 print(".")
@@ -249,13 +250,17 @@ class State
                 }
                 
                 print("*")
-                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
+                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets, lock: self.lock, last: false)
             }
             else
             {
                 print("+")
                 buffer.append(connPackets)
             }
+        }
+        else
+        {
+            print("No complete connections to save.")
         }
         
         print("@")
@@ -265,53 +270,51 @@ class State
         }
         
         self.lock.enter()
-        
-        for packet in buffer
+        for (index, packet) in buffer.enumerated()
         {
-            print("-> Saving complete connections. --<-@")
-            lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
+            print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
+            lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet, lock: lock, last: index==buffer.count-1)
         }
+        self.lock.wait()
         
         if rawCaptured.count == 0
         {
-            self.lock.leave()
             return
         }
         
+        self.lock.enter()
         for (index, rawConnection) in rawCaptured.enumerated()
         {
-            print("-> Saving complete raw connections. --<-@")
+            print("-> Saving complete raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
             var last: Bool = false
-            if index == (rawCaptured.count - 1)
-            {
-                last = true
-            }
-            
-            lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value, lastPacket: last, lock: self.lock)
+            lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value, lastPacket: index==rawCaptured.count-1, lock: self.lock)
         }
+        self.lock.wait()
         
         // Usually we want both incoming and outgoingf packets
         // In the case where we know these are blocked connections
         // We want to record the data even when we have not received a response.
         // This is still a valid blocked case. We expect that some blocked connections will behave in this way.
-        
+
         //If the connections in this map are labeled blocked by the user
         print("newAllowBlock is ", allowBlock)
         if allowBlock == false
         {
             print("-> Captured count is ", captured.count)
-            for (_, connection) in captured
+            self.lock.enter()
+            for (index, (_, connection)) in captured.enumerated()
             {
-                print("Entering loop for saving incomplete connections.")
+                print("Entering loop for saving incomplete connections. (\(index+1)/\(captured.count))")
                 // If this connection in the map is incomplete (only the incoming packet was captured) save it
                 // Check this because a complete struct (both incoming and outgoing packets are populated)
                 // will already be getting saved by the above for loop
                 if connection.Outgoing == nil
                 {
                     print("-> Saving incomplete connection.  --<-@")
-                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
+                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection, lock: lock, last: index==captured.count-1)
                 }
             }
+            self.lock.wait()
         }
         
         print("--> We are done saving things to the database. Bye now!\n")

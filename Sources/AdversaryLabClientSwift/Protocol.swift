@@ -40,34 +40,112 @@ public struct Client
 {
     let connection: ReConnection
     
-    func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
+    func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets, lock: DispatchGroup, last: Bool)
     {
         print("addtrainpk")
         let connID = connectionID()
         
-        guard let EthernetPacket = conn.Incoming.ethernet else { return }
-        guard let IPpacket = conn.Incoming.ipv4 else { return }
-        guard let TCPsegment = conn.Incoming.tcp else { return }
+        guard let EthernetPacket = conn.Incoming.ethernet else
+        {
+            if last
+            {
+                lock.leave()
+            }
+            
+            return
+        }
+        guard let IPpacket = conn.Incoming.ipv4 else
+        {
+            if last
+            {
+                lock.leave()
+            }
+            
+            return
+        }
+        guard let TCPsegment = conn.Incoming.tcp else
+        {
+            if last
+            {
+                lock.leave()
+            }
+            
+            return
+        }
+        
+        guard let tcp_packet_bytes = IPpacket.payload else
+        {
+            if last
+            {
+                lock.leave()
+            }
+            
+            return
+        }
+
+        guard let payload_bytes = TCPsegment.payload else
+        {
+            if last
+            {
+                lock.leave()
+            }
+            
+            return
+        }
         
         let rawPacket: ReDocument = [
             "connection": connID,
-            "ip_packet": EthernetPacket.payload,
-            "tcp_packet": IPpacket.payload,
-            "payload": TCPsegment.payload,
+            "ip_packet": EthernetPacket.payload.base64EncodedString(),
+            "tcp_packet": tcp_packet_bytes.base64EncodedString(),
+            "payload": payload_bytes.base64EncodedString(),
             "timestamp": conn.Incoming.timestamp,
             "allow_block": allowBlock,
             "in_out": true, //true = incoming
             "handshake": true //true because add train is only called for handshake packets
         ]
 
-        R.dbCreate(transport).run(connection) { response in
-            guard !response.isError else { return }
+        print("Actually writing to database")
+        
+        R.dbCreate(transport).run(connection)
+        {
+            response in
+            
+            if response.isError
+            {
+                print("Error creating database \(response), perhaps already created")
+            }
 
-            R.db(transport).tableCreate(packetsKey).run(self.connection) { response in
-                guard !response.isError else { return }
+            R.db(transport).tableCreate(packetsKey).run(self.connection)
+            {
+                response in
                 
-                R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection) { response in
-                    guard !response.isError else { return }
+                if response.isError
+                {
+                    print("Error creating table \(response), perhaps already created")
+                }
+                
+                R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
+                {
+                    response in
+                    
+                    guard !response.isError else
+                    {
+                        print("Error inserting document")
+
+                        if last
+                        {
+                            lock.leave()
+                        }
+                        
+                        return
+                    }
+                    
+                    print("Successfully wrote document to database.")
+                    
+                    if last
+                    {
+                        lock.leave()
+                    }
                 }
             }
         }
@@ -75,14 +153,10 @@ public struct Client
 
     func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets, lastPacket: Bool, lock: DispatchGroup)
     {
-        DispatchQueue.main.async
+        if lastPacket
         {
-            print("add raw train packet")
-            if lastPacket
-            {
-                lock.leave()
-                return
-            }
+            lock.leave()
+            return
         }
     }
     
@@ -140,7 +214,3 @@ public func connectionID() -> String
     let timestampMicrosecs = Date().timeIntervalSince1970
     return timestampMicrosecs.string
 }
-
-
-
-
