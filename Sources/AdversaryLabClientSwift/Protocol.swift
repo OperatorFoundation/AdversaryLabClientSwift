@@ -13,7 +13,8 @@ import Song
 
 let packetsKey: String = "Packets"
 
-public struct RawPacket: Codable {
+public struct RawPacket: Codable
+{
     let connection: String
     let ip_packet: Data
     let tcp_packet: Data
@@ -82,7 +83,7 @@ public struct Client
             
             return
         }
-
+        
         guard let payload_bytes = TCPsegment.payload else
         {
             if last
@@ -103,7 +104,7 @@ public struct Client
             "in_out": true, //true = incoming
             "handshake": true //true because add train is only called for handshake packets
         ]
-
+        
         print("Actually writing to database")
         
         R.dbCreate(transport).run(connection)
@@ -114,7 +115,7 @@ public struct Client
             {
                 print("Error creating database \(response), perhaps already created")
             }
-
+            
             R.db(transport).tableCreate(packetsKey).run(self.connection)
             {
                 response in
@@ -131,7 +132,7 @@ public struct Client
                     guard !response.isError else
                     {
                         print("Error inserting document")
-
+                        
                         if last
                         {
                             lock.leave()
@@ -150,7 +151,7 @@ public struct Client
             }
         }
     }
-
+    
     func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets, lastPacket: Bool, lock: DispatchGroup)
     {
         if lastPacket
@@ -180,7 +181,7 @@ public struct Client
             in_out: true, //true = incoming
             handshake: true //true because add train is only called for handshake packets
         )
-
+        
         let songEncoder = SongEncoder()
         if let encodedBytes = try? songEncoder.encode(rawPacket)
         {
@@ -193,13 +194,15 @@ public struct Client
 
 public func Connect(callback: @escaping (Client?) -> Void)
 {
-    guard let url = URL(string: "rethinkdb://localhost:28015") else {
+    guard let url = URL(string: "rethinkdb://localhost:28015") else
+    {
         callback(nil)
         return
     }
     
     R.connect(url) { err, connection in
-        guard err == nil else {
+        guard err == nil else
+        {
             print("error connecting to rethinkdb")
             callback(nil)
             return
@@ -208,7 +211,7 @@ public func Connect(callback: @escaping (Client?) -> Void)
         return
     }
 }
-    
+
 public func connectionID() -> String
 {
     let timestampMicrosecs = Date().timeIntervalSince1970

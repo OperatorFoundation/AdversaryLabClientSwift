@@ -62,7 +62,6 @@ class State
                 print("-> Received unexpected input for the connection data category please enter 'allow' or 'block':\n \(String(describing: text))")
             }
         }
-        
         // This tells us that we are done recording and the buffered packets
         // are either allowed or blocked based on user input.
         allowBlockChannel.enqueue(allowBlock)
@@ -81,25 +80,25 @@ class State
         let packetChannel = Queue<Packet>()
         switch sourceReadFromFile
         {
-            case true :
-                guard let packetSource = try? SwiftPCAP.Offline(path: validPCAPfile) else
-                {
-                    print("-> Error opening file")
-                    return
-                }
-                
-                print("readPkts file")
-                self.readPackets(source: packetSource, dest: packetChannel, port: port)
+        case true :
+            guard let packetSource = try? SwiftPCAP.Offline(path: validPCAPfile) else
+            {
+                print("-> Error opening file")
+                return
+            }
             
-            default :
-                guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
-                {
-                    print("-> Error opening network device")
-                    return
-                }
-                
-                print("readPkts interface")
-                self.readPackets(source: packetSource, dest: packetChannel, port: port)
+            print("readPkts file")
+            self.readPackets(source: packetSource, dest: packetChannel, port: port)
+            
+        default :
+            guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
+            {
+                print("-> Error opening network device")
+                return
+            }
+            
+            print("readPkts interface")
+            self.readPackets(source: packetSource, dest: packetChannel, port: port)
         }
     }
     
@@ -162,7 +161,7 @@ class State
     func capturePort(_ packet: Packet, _ port: UInt16)
     {
         print("-> Capturing port \(port)")
-                
+        
         guard let conn = NewConnection(packet: packet) else { return }
         guard conn.CheckPort(port: port) else { return }
         
@@ -187,7 +186,9 @@ class State
         if incoming {
             connPackets.Incoming.append(packet)
             rawCaptured[conn] = connPackets
-        } else {
+        }
+        else
+        {
             connPackets.Outgoing.append(packet)
             rawCaptured[conn] = connPackets
         }
@@ -297,7 +298,7 @@ class State
         // In the case where we know these are blocked connections
         // We want to record the data even when we have not received a response.
         // This is still a valid blocked case. We expect that some blocked connections will behave in this way.
-
+        
         //If the connections in this map are labeled blocked by the user
         print("newAllowBlock is ", allowBlock)
         if allowBlock == false
