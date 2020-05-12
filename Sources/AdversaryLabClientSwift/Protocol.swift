@@ -40,7 +40,8 @@ public struct RawConnectionPackets
 public struct Client
 {
     let connection: ReConnection
-    
+    var packetDatabase: [RawPacket] = []
+
     func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets, lock: DispatchGroup, last: Bool)
     {
         print("addtrainpk")
@@ -161,9 +162,9 @@ public struct Client
         }
     }
     
-    func AddTrainPacketSong(transport: String, allowBlock: Bool, conn: ConnectionPackets)
+    mutating func AddTrainPacketSong(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
-        print("addtrainpk")
+        print("AddTrainPacketSong !!!")
         let connID = connectionID()
         
         guard let EthernetPacket = conn.Incoming.ethernet else { return }
@@ -182,8 +183,14 @@ public struct Client
             handshake: true //true because add train is only called for handshake packets
         )
         
+        packetDatabase.append(rawPacket)
+    }
+    
+    func saveWithSong()
+    {
+        print("Saving \(packetDatabase.count) packets with song")
         let songEncoder = SongEncoder()
-        if let encodedBytes = try? songEncoder.encode(rawPacket)
+        if let encodedBytes = try? songEncoder.encode(packetDatabase)
         {
             let encoded = String(data: encodedBytes)
             print("Song Encoded:")

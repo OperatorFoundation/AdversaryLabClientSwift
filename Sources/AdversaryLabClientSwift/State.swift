@@ -277,6 +277,7 @@ class State
         {
             print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
             lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet, lock: lock, last: index==buffer.count-1)
+            lab.AddTrainPacketSong(transport: transport, allowBlock: allowBlock, conn: packet)
         }
         self.lock.wait()
         
@@ -319,6 +320,8 @@ class State
             }
             self.lock.wait()
         }
+        
+        lab.saveWithSong()
         
         print("--> We are done saving things to the database. Bye now!\n")
         exit(1)
