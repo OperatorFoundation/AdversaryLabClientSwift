@@ -40,57 +40,31 @@ public struct RawConnectionPackets
 public struct Client
 {
     let connection: ReConnection
+    let lockReThink: DispatchGroup = DispatchGroup()
     
-    func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets, lock: DispatchGroup, last: Bool)
+    func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
         print("addtrainpk")
         let connID = connectionID()
         
         guard let EthernetPacket = conn.Incoming.ethernet else
         {
-            if last
-            {
-                lock.leave()
-            }
-            
             return
         }
         guard let IPpacket = conn.Incoming.ipv4 else
         {
-            if last
-            {
-                lock.leave()
-            }
-            
             return
         }
         guard let TCPsegment = conn.Incoming.tcp else
         {
-            if last
-            {
-                lock.leave()
-            }
-            
             return
         }
-        
         guard let tcp_packet_bytes = IPpacket.payload else
         {
-            if last
-            {
-                lock.leave()
-            }
-            
             return
         }
-        
         guard let payload_bytes = TCPsegment.payload else
         {
-            if last
-            {
-                lock.leave()
-            }
-            
             return
         }
         
@@ -101,16 +75,16 @@ public struct Client
             "payload": payload_bytes.base64EncodedString(),
             "timestamp": conn.Incoming.timestamp,
             "allow_block": allowBlock,
-            "in_out": true, //true = incoming
+            "in_out": true, //true = incoming, false = outgoing
             "handshake": true //true because add train is only called for handshake packets
         ]
         
         print("Actually writing to database")
-        
+        self.lockReThink.enter()
         R.dbCreate(transport).run(connection)
         {
             response in
-            
+            print("add train packet - database callback was called")
             if response.isError
             {
                 print("Error creating database \(response), perhaps already created")
@@ -132,32 +106,253 @@ public struct Client
                     guard !response.isError else
                     {
                         print("Error inserting document")
-                        
-                        if last
-                        {
-                            lock.leave()
-                        }
-                        
+                        self.lockReThink.leave()
                         return
                     }
-                    
                     print("Successfully wrote document to database.")
+                    self.lockReThink.leave()
+                }
+            }
+        }
+        self.lockReThink.wait()
+        
+        if let outgoing = conn.Outgoing
+        {
+            guard let EthernetPacket = outgoing.ethernet else
+            {
+                return
+            }
+            guard let IPpacket = outgoing.ipv4 else
+            {
+                return
+            }
+            guard let TCPsegment = outgoing.tcp else
+            {
+                return
+            }
+            guard let tcp_packet_bytes = IPpacket.payload else
+            {
+                return
+            }
+            guard let payload_bytes = TCPsegment.payload else
+            {
+                return
+            }
+            
+            let rawPacket: ReDocument = [
+                "connection": connID,
+                "ip_packet": EthernetPacket.payload.base64EncodedString(),
+                "tcp_packet": tcp_packet_bytes.base64EncodedString(),
+                "payload": payload_bytes.base64EncodedString(),
+                "timestamp": conn.Incoming.timestamp,
+                "allow_block": allowBlock,
+                "in_out": false, //true = incoming, false = outgoing
+                "handshake": true //true because add train is only called for handshake packets
+            ]
+            
+            print("Actually writing to database")
+            self.lockReThink.enter()
+            R.dbCreate(transport).run(connection)
+            {
+                response in
+                print("add train packet - database callback was called")
+                if response.isError
+                {
+                    print("Error creating database \(response), perhaps already created")
+                }
+                
+                R.db(transport).tableCreate(packetsKey).run(self.connection)
+                {
+                    response in
                     
-                    if last
+                    if response.isError
                     {
-                        lock.leave()
+                        print("Error creating table \(response), perhaps already created")
+                    }
+                    
+                    R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
+                    {
+                        response in
+                        
+                        guard !response.isError else
+                        {
+                            print("Error inserting document")
+                            self.lockReThink.leave()
+                            
+                            
+                            return
+                        }
+                        
+                        print("Successfully wrote document to database.")
+                        self.lockReThink.leave()
                     }
                 }
             }
         }
     }
     
-    func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets, lastPacket: Bool, lock: DispatchGroup)
+    func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
     {
-        if lastPacket
+        
+        for packet in conn.Incoming
         {
-            lock.leave()
-            return
+            
+            print("add raw train pk")
+            let connID = connectionID()
+            
+            guard let EthernetPacket = packet.ethernet else
+            {
+                continue
+            }
+            guard let IPpacket = packet.ipv4 else
+            {
+                continue
+            }
+            guard let TCPsegment = packet.tcp else
+            {
+                continue
+            }
+            
+            guard let tcp_packet_bytes = IPpacket.payload else
+            {
+                continue
+            }
+            
+            guard let payload_bytes = TCPsegment.payload else
+            {
+                continue
+            }
+            
+            let rawPacket: ReDocument = [
+                "connection": connID,
+                "ip_packet": EthernetPacket.payload.base64EncodedString(),
+                "tcp_packet": tcp_packet_bytes.base64EncodedString(),
+                "payload": payload_bytes.base64EncodedString(),
+                "timestamp": packet.timestamp,
+                "allow_block": allowBlock,
+                "in_out": true, //true = incoming
+                "handshake": false //
+            ]
+            
+            print("Actually writing to database")
+            
+            self.lockReThink.enter()
+            R.dbCreate(transport).run(connection)
+            {
+                response in
+                print("add raw train packet incoming - database callback was called")
+                
+                if response.isError
+                {
+                    print("Error creating database \(response), perhaps already created")
+                }
+                
+                R.db(transport).tableCreate(packetsKey).run(self.connection)
+                {
+                    response in
+                    
+                    if response.isError
+                    {
+                        print("Error creating table \(response), perhaps already created")
+                    }
+                    
+                    R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
+                    {
+                        response in
+                        
+                        guard !response.isError else
+                        {
+                            print("Error inserting document")
+                            self.lockReThink.leave()
+                            return
+                        }
+                        self.lockReThink.leave()
+                        print("Successfully wrote document to database.")
+                        
+                    }
+                }
+            }
+            self.lockReThink.wait()
+        }
+        
+        for (index, packet) in conn.Outgoing.enumerated()
+        {
+            print("add raw train pk")
+            let connID = connectionID()
+            guard let EthernetPacket = packet.ethernet else
+            {
+                continue
+            }
+            guard let IPpacket = packet.ipv4 else
+            {
+                continue
+            }
+            guard let TCPsegment = packet.tcp else
+            {
+                continue
+            }
+            
+            guard let tcp_packet_bytes = IPpacket.payload else
+            {
+                continue
+            }
+            guard let payload_bytes = TCPsegment.payload else
+            {
+                continue
+            }
+            
+            let rawPacket: ReDocument = [
+                "connection": connID,
+                "ip_packet": EthernetPacket.payload.base64EncodedString(),
+                "tcp_packet": tcp_packet_bytes.base64EncodedString(),
+                "payload": payload_bytes.base64EncodedString(),
+                "timestamp": packet.timestamp,
+                "allow_block": allowBlock,
+                "in_out": false, //true = incoming, false=outgoing
+                "handshake": false //
+            ]
+            
+            print("Actually writing to database")
+            
+            self.lockReThink.enter()
+            R.dbCreate(transport).run(connection)
+            {
+                response in
+                print("add raw train packet outgoing - database callback was called")
+                
+                if response.isError
+                {
+                    print("Error creating database \(response), perhaps already created")
+                }
+                
+                R.db(transport).tableCreate(packetsKey).run(self.connection)
+                {
+                    response in
+                    
+                    if response.isError
+                    {
+                        print("Error creating table \(response), perhaps already created")
+                    }
+                    
+                    R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
+                    {
+                        response in
+                        
+                        guard !response.isError else
+                        {
+                            print("Error inserting document")
+                            self.lockReThink.leave()
+                            return
+                        }
+                        
+                        print("Successfully wrote document to database.")
+                        self.lockReThink.leave()
+                        
+                    }
+                }
+            }
+            
+            self.lockReThink.wait()
         }
     }
     

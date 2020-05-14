@@ -84,7 +84,6 @@ final class ParserTests: XCTestCase
     
     func testEthertype_Data_getter()
     {
-        //fix / verify
         let correct = Data(array: [0x08, 0x00])
         let ET = EtherType(rawValue: 0x0800)
         let result = ET?.data
@@ -94,7 +93,6 @@ final class ParserTests: XCTestCase
     
     func testIPVersionInit()
     {
-        //fix /verify
         var bits = Bits()
         let correct = IPversion(rawValue: 0x04)
         
@@ -123,7 +121,6 @@ final class ParserTests: XCTestCase
     
     func testIPVersionBits()
     {
-        //fix /verify
         var correct = Bits()
         
         guard correct.pack(bit: 1) else
@@ -152,7 +149,6 @@ final class ParserTests: XCTestCase
     
     func testEthernetIPv4Init()
     {
-        //fix / verify
         //sample source: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=tcp-ethereal-file1.trace
         //packet #4
         let packetBytes = Data(array: [
@@ -186,7 +182,14 @@ final class ParserTests: XCTestCase
         let correctIPv4moreFragments: UInt8 = 0b0
         let correctIPv4fragmentOffset: UInt16 = 0x0000
         let correctIPv4ttl: UInt8 = 0x34 //(52)
-        let correctIPv4protocolNumber: UInt8 = 0x06 //tcp
+        
+        guard let correctIPv4protocolNumber = IPprotocolNumber(rawValue: 0x06) else { //0x06 = TCP
+            XCTFail()
+            return
+        }
+        
+        
+        
         let correctIPv4checksum: UInt16 = 0x2dc9
         let correctIPv4sourceAddress: Data = Data(array:[0x80, 0x77, 0xf5, 0x0c]) //128.119.245.12
         let correctIPv4destinationAddress: Data = Data(array:[0x83, 0xd4, 0x1f, 0xa7]) //131.212.31.167
@@ -198,20 +201,19 @@ final class ParserTests: XCTestCase
             0x01, 0x01, 0x04, 0x02])
         
         let correctIPV4data: Data = Data(array:[
-            //fix, why do bytes need to be reversed, is this ok? do we just assume .little?
             0x04, //ver
             0x05, //ihl
             0x00, //dscp
             0x00, //ecn
-            0x30, 0x00, //length -- reversed bytes due to endianess
-            0x00, 0x00, //identification -- reversed bytes due to endianess
+            0x00, 0x30, //length
+            0x00, 0x00, //identification
             0x00, //reserved bit
             0x01, //don't fragment
             0x00, //morefragments
-            0x00, 0x00, //fragment offset -- reversed bytes due to endianess
+            0x00, 0x00, //fragment offset
             0x34, //ttl
             0x06, //protocol number
-            0xc9, 0x2d, //checksum -- reversed bytes due to endianess
+            0x2d, 0xc9, //checksum
             0x80, 0x77, 0xf5, 0x0c, //source address
             0x83, 0xd4, 0x1f, 0xa7, //destination address
             //no options
@@ -323,8 +325,8 @@ final class ParserTests: XCTestCase
             0xfb, 0x22, 0xff, 0xfb, 0x27, 0xff, 0xfd, 0x05, 0xff, 0xfb, 0x23])
         
         let correctDataBytes = Data(array:[
-            0xe6, 0x04, //sourcce //fix? reversed bytes?
-            0x17, 0x00, //dest //fix? reversed bytes?
+            0x04, 0xe6, //sourcce
+            0x00, 0x17, //dest
             0x04, 0x53, 0xd8, 0x70, //seq#
             0xc0, 0x40, 0x87, 0xcf, //ack#
             0x08, //offset
@@ -338,9 +340,9 @@ final class ParserTests: XCTestCase
             0x00, //rst
             0x00, //syn
             0x00, //fin
-            0x78, 0x7d, //windowsize //fix? reversed bytes?
-            0x0a, 0x79, //checksum //fix? reversed bytes?
-            0x00, 0x00, //urgent pointer //fix? reversed bytes?
+            0x7d, 0x78, //windowsize
+            0x79, 0x0a, //checksum
+            0x00, 0x00, //urgent pointer
             //options
             0x01, 0x01, 0x08, 0x0a, 0x00, 0x16, 0x0a, 0x27, 0x00, 0x05, 0x4b, 0x63,
             //data
@@ -425,7 +427,6 @@ final class ParserTests: XCTestCase
         ])
         
         let correctDataBytes = Data(array: [
-            //fix? uint16 byte reversals
             0x00, 0x40, 0x05, 0x40, 0xef, 0x24, 0x00, 0x60, 0x08, 0x9f, 0xb1, 0xf3, 0x08, 0x00, 0x81, 0x00,
             0x00, 0x20, 0x45, 0x00, 0x00, 0x34, 0x8a, 0x1b, 0x40, 0x00, 0x40, 0x06, 0x68, 0xe4, 0x83, 0x97,
             0x20, 0x15, 0x83, 0x97, 0x20, 0x81, 0x17, 0x70, 0x04, 0x8a, 0x4d, 0x3d, 0x54, 0xb9, 0x4e, 0x14,
@@ -592,10 +593,10 @@ final class ParserTests: XCTestCase
         ])
         
         let correctUDPsegmentBytes = Data(array:[
-            0xa1, 0x00, // source port //fix? reversed bytes?
-            0x2c, 0x3e, // dest port //fix? reversed bytes?
-            0x42, 0x00, // length //fix? reversed bytes?
-            0x6d, 0x7d, // checksum //fix? reversed bytes?
+            0x00, 0xa1, // source port
+            0x3e, 0x2c, // dest port
+            0x00, 0x42, // length
+            0x7d, 0x6d, // checksum
             0x30, 0x38, 0x02, 0x01, 0x00, 0x04, 0x06, 0x70,
             0x75, 0x62, 0x6c, 0x69, 0x63, 0xa2, 0x2b, 0x02, 0x01, 0x26, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00,
             0x30, 0x20, 0x30, 0x1e, 0x06, 0x08, 0x2b, 0x06, 0x01, 0x02, 0x01, 0x01, 0x02, 0x00, 0x06, 0x12,

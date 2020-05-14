@@ -23,7 +23,6 @@ class State
     var lab: Client
     let transport: String
     let port: UInt16
-    var lock: DispatchGroup
     var recording: Bool
     
     init(transport: String, port: UInt16, client: Client)
@@ -31,8 +30,6 @@ class State
         self.transport = transport
         self.port = port
         self.lab = client
-        
-        self.lock = DispatchGroup()
         self.recording = true
     }    
     
@@ -80,31 +77,31 @@ class State
         let packetChannel = Queue<Packet>()
         switch sourceReadFromFile
         {
-        case true :
+        case true : //read from pcap file
             guard let packetSource = try? SwiftPCAP.Offline(path: validPCAPfile) else
             {
                 print("-> Error opening file")
                 return
             }
             
-            print("readPkts file")
+            print("read packets from file")
             self.readPackets(source: packetSource, dest: packetChannel, port: port)
             
-        default :
+        default : //read from network interface
             guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
             {
                 print("-> Error opening network device")
                 return
             }
             
-            print("readPkts interface")
+            print("read packets from interface")
             self.readPackets(source: packetSource, dest: packetChannel, port: port)
         }
     }
     
     func readPackets(source: SwiftPCAP.Base, dest: Queue<Packet>, port: UInt16)
     {
-        print("read packets")
+        print("reading packets")
         while self.recording
         {
             let bytes = source.nextPacket()
@@ -119,9 +116,22 @@ class State
                     print("\n\nEnd of PCAP file reached.\n")
                     print("Press CTRL-C to end and save to database.")
                     print("Fix so that we save to db automatically")
+                    
+                    print("event handler happened")
+                    
+                    // Restore default signal handling, which means killing the app
+                    signal(SIGINT, SIG_DFL)
+                    
+                    self.recording = false
+                    if self.allowBlockChannel.isEmpty
+                    {
+                        self.allowBlockChannel.enqueue(true)
+                    }
+                    self.saveCaptured()
+                    exit(0)
                 }
                 
-                sleep(1)
+                sleep(1) //wait for a packet
             }
             else
             {
@@ -129,9 +139,9 @@ class State
                 print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 printBytes(bytes)
                 
-                let thisPacket = Packet(rawBytes: Data(bytes))
+                let thisPacket = Packet(rawBytes: Data(bytes)) //parse the packet
                 
-                if thisPacket.tcp != nil
+                if thisPacket.tcp != nil //capture tcp packet
                 {
                     capturePort(thisPacket, port)
                 }
@@ -161,8 +171,11 @@ class State
     func capturePort(_ packet: Packet, _ port: UInt16)
     {
         print("-> Capturing port \(port)")
-        
+
         guard let conn = NewConnection(packet: packet) else { return }
+        
+        print(conn)
+        
         guard conn.CheckPort(port: port) else { return }
         
         recordRawPacket(packet, port)
@@ -196,15 +209,15 @@ class State
     
     func recordPacket(_ packet: Packet, _ port: UInt16)
     {
-        print("recPkt")
+        print("record packet")
         guard let conn = NewConnection(packet: packet) else { return }
         guard let TCPsegment = packet.tcp else { return }
         let incoming = TCPsegment.destinationPort == port
         var maybeConnPackets = captured[conn]
         
-        // This is the first packet of the connection
         if maybeConnPackets == nil
         {
+            // This is the first packet of the connection
             if incoming
             {
                 maybeConnPackets = ConnectionPackets(Incoming: packet, Outgoing: nil)
@@ -251,9 +264,8 @@ class State
                     print("-")
                     return
                 }
-                
                 print("*")
-                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets, lock: self.lock, last: false)
+                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
             }
             else
             {
@@ -272,27 +284,24 @@ class State
             return
         }
         
-        self.lock.enter()
-        for (index, packet) in buffer.enumerated()
+        if buffer.count > 0
         {
-            print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
-            lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet, lock: lock, last: index==buffer.count-1)
-        }
-        self.lock.wait()
-        
-        if rawCaptured.count == 0
-        {
-            return
+            for (index, packet) in buffer.enumerated()
+            {
+                print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
+                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
+            }
         }
         
-        self.lock.enter()
-        for (index, rawConnection) in rawCaptured.enumerated()
+        if rawCaptured.count > 0
         {
-            print("-> Saving complete raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
-            var last: Bool = false
-            lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value, lastPacket: index==rawCaptured.count-1, lock: self.lock)
+            for (index, rawConnection) in rawCaptured.enumerated()
+            {
+                print("-> Saving complete raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
+                var last: Bool = false
+                lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
+            }
         }
-        self.lock.wait()
         
         // Usually we want both incoming and outgoingf packets
         // In the case where we know these are blocked connections
@@ -304,22 +313,22 @@ class State
         if allowBlock == false
         {
             print("-> Captured count is ", captured.count)
-            self.lock.enter()
-            for (index, (_, connection)) in captured.enumerated()
+            if captured.count > 0
             {
-                print("Entering loop for saving incomplete connections. (\(index+1)/\(captured.count))")
-                // If this connection in the map is incomplete (only the incoming packet was captured) save it
-                // Check this because a complete struct (both incoming and outgoing packets are populated)
-                // will already be getting saved by the above for loop
-                if connection.Outgoing == nil
+                for (index, (_, connection)) in captured.enumerated()
                 {
-                    print("-> Saving incomplete connection.  --<-@")
-                    lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection, lock: lock, last: index==captured.count-1)
+                    print("Entering loop for saving incomplete connections. (\(index+1)/\(captured.count))")
+                    // If this connection in the map is incomplete (only the incoming packet was captured) save it
+                    // Check this because a complete struct (both incoming and outgoing packets are populated)
+                    // will already be getting saved by the above for loop
+                    if connection.Outgoing == nil
+                    {
+                        print("-> Saving incomplete connection.  --<-@")
+                        lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
+                    }
                 }
             }
-            self.lock.wait()
         }
-        
         print("--> We are done saving things to the database. Bye now!\n")
         exit(1)
     }
