@@ -40,6 +40,7 @@ public struct RawConnectionPackets
 public struct Client
 {
     let connection: ReConnection
+    let lockReThink: DispatchGroup = DispatchGroup()
     var packetDatabase: [RawPacket] = []
 
     func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
