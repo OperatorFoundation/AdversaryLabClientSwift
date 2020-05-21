@@ -1,5 +1,4 @@
 import Foundation
-
 import SwiftPCAP
 import SwiftQueue
 import AdversaryLabClient
@@ -29,7 +28,6 @@ func NewConnection(packet: Packet) -> Connection?
     {
         return Connection(small: TCPsegment.destinationPort, big: TCPsegment.sourcePort)
     }
-    
 }
 
 extension Connection
@@ -243,5 +241,3 @@ func usage()
     print("-> Example: AdversaryLabClient HTTPS 443")
     print()
 }
-
-

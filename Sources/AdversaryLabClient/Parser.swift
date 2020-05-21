@@ -133,12 +133,12 @@ public struct IPv4
     public let ECN: UInt8 //2 bits
     public let length: UInt16 //2 bytes   --number
     public let identification: UInt16 //2 bytes
-    public let reservedBit: UInt8
-    public let dontFragment: UInt8
-    public let moreFragments: UInt8
+    public let reservedBit: UInt8 //1 bit
+    public let dontFragment: UInt8 //1 bit
+    public let moreFragments: UInt8 //1 bit
     public let fragmentOffset: UInt16 //13 bits   --number
     public let ttl: UInt8 //1 byte   --number
-    public let protocolNumber: UInt8 //1 byte
+    public let protocolNumber: IPprotocolNumber //UInt8 //1 byte
     public let checksum: UInt16 //2 bytes
     public let sourceAddress: Data //4 bytes
     public let destinationAddress: Data //4 bytes
@@ -340,7 +340,7 @@ extension Ethernet: MaybeDatable
     
     public var data: Data
     {
-        DatableConfig.endianess = .little
+        DatableConfig.endianess = .big
         var result = Data()
         
         result.append(MACDestination)
@@ -443,8 +443,10 @@ extension IPv4: MaybeDatable
         
         guard let protocolNumber = bits.unpack(bytes: 1) else { return nil } //fix should use IPprotocolNumber()
         let protocolNumberUint8 = protocolNumber.uint8
-        self.protocolNumber = protocolNumberUint8
-        print("ProtocolNumber: 0d" + String(format: "%u", self.protocolNumber))
+        print("ProtocolNumber: 0d" + String(format: "%u", protocolNumberUint8 ))
+        guard let protocolNumType = IPprotocolNumber(data: protocolNumber) else { return nil }
+        self.protocolNumber = protocolNumType
+        
         
         DatableConfig.endianess = .big
         guard let checksum = bits.unpack(bytes: 2) else { return nil }
@@ -487,7 +489,7 @@ extension IPv4: MaybeDatable
     
     public var data: Data
     {
-        DatableConfig.endianess = .little
+        DatableConfig.endianess = .big
         var result = Data()
         result.append(version.data)
         result.append(IHL)
@@ -500,7 +502,10 @@ extension IPv4: MaybeDatable
         result.append(moreFragments)
         result.append(fragmentOffset.data)
         result.append(ttl)
-        result.append(protocolNumber)
+        if let protocolNumberData = protocolNumber.data
+        {
+            result.append(protocolNumberData)
+        }
         result.append(checksum.data)
         result.append(sourceAddress)
         result.append(destinationAddress)
@@ -662,7 +667,7 @@ extension TCP: MaybeDatable
     
     public var data: Data
     {
-        DatableConfig.endianess = .little
+        DatableConfig.endianess = .big
         var result = Data()
         result.append(sourcePort.data)
         result.append(destinationPort.data)
@@ -741,7 +746,7 @@ extension UDP: MaybeDatable
     
     public var data: Data
     {
-        DatableConfig.endianess = .little
+        DatableConfig.endianess = .big
         var result = Data()
         
         result.append(sourcePort.data)
