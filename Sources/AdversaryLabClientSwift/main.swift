@@ -85,10 +85,10 @@ struct AdversaryLabClientSwift: ParsableCommand
     
     func validate() throws
     {
-        guard self.transport == "HTTP" || self.transport == "HTTPS" else
-        {
-            throw ValidationError("'<transport>' must be either 'HTTP' or 'HTTPS'. Use --help for more info.")
-        }
+//        guard self.transport == "HTTP" || self.transport == "HTTPS" else
+//        {
+//            throw ValidationError("'<transport>' must be either 'HTTP' or 'HTTPS'. Use --help for more info.")
+//        }
         
         guard self.port > 0 && self.port <= 65535 else
         {

@@ -26,6 +26,12 @@ class State
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
     let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
     var debug_packetCount = 0
+    var debug_portMatchPacketsCount = 0
+    var debug_payloadPacketsCount = 0
+    var debug_recordedPacketsCount = 0
+    var debug_recordedCompletePacketsCount = 0
+    var debug_addTrainPacketCount = 0
+    var debug_savedIncompletePacketCount = 0
     var lab: Client
     let transport: String
     let port: UInt16
@@ -144,6 +150,7 @@ class State
                 
                 if thisPacket.tcp != nil //capture tcp packet
                 {
+                
                     capturePort(thisPacket, port)
                 }
             }
@@ -178,11 +185,13 @@ class State
         print(conn)
         
         guard conn.CheckPort(port: port) else { return }
+        debug_portMatchPacketsCount += 1
         
         recordRawPacket(packet, port)
         
         if packet.tcp?.payload != nil
         {
+            debug_payloadPacketsCount += 1
             recordPacket(packet, port)
         }
     }
@@ -223,6 +232,7 @@ class State
             {
                 maybeConnPackets = ConnectionPackets(Incoming: packet, Outgoing: nil)
                 captured[conn] = maybeConnPackets
+                debug_recordedPacketsCount += 1
             }
         }
         else
@@ -237,6 +247,8 @@ class State
                 
                 print("-> .")
                 recordable.enqueue(connPackets)
+                debug_recordedPacketsCount += 1
+                debug_recordedCompletePacketsCount += 1
             }
         }
     }
@@ -248,7 +260,7 @@ class State
         var buffer: [ConnectionPackets] = []
         var count = 0
         
-        if !recordable.isEmpty
+        while !recordable.isEmpty
         {
             print("Saving complete connections")
             guard let connPackets = recordable.dequeue() else
@@ -267,6 +279,7 @@ class State
                 }
                 print("*")
                 lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
+                debug_addTrainPacketCount += 1
             }
             else
             {
@@ -274,15 +287,24 @@ class State
                 buffer.append(connPackets)
             }
         }
-        else
-        {
-            print("No complete connections to save.")
-        }
+//        else
+//        {
+//            print("No complete connections to save.")
+//        }
         
         print("@")
-        guard let allowBlock = allowBlockChannel.dequeue() else
+        var allowBlock = false
+        if let cmdLineAllowBlock = maybeAllowBlock
         {
-            return
+            allowBlock = cmdLineAllowBlock
+        }
+        else
+        {
+            guard let queueAllowBlock = allowBlockChannel.dequeue() else
+            {
+                return
+            }
+            allowBlock = queueAllowBlock
         }
         
         if buffer.count > 0
@@ -292,6 +314,7 @@ class State
                 print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
                 lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
                 lab.AddTrainPacketSong(transport: transport, allowBlock: allowBlock, conn: packet)
+                debug_addTrainPacketCount += 1
             }
         }
         
@@ -327,11 +350,23 @@ class State
                     {
                         print("-> Saving incomplete connection.  --<-@")
                         lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
+                        debug_addTrainPacketCount += 1
+                        debug_savedIncompletePacketCount += 1
                     }
                 }
             }
         }
         lab.saveWithSong()
+        
+        print("total packet count = \(debug_packetCount)")
+        print("port match packet count = \(debug_portMatchPacketsCount)")
+        print("payload packet count = \(debug_payloadPacketsCount)")
+        print("payload recorded packet count = \(debug_recordedPacketsCount)")
+        print("payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
+        print("add train packet count = \(debug_addTrainPacketCount)")
+        print("add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
+        
+        
         
         print("--> We are done saving things to the database. Bye now!\n")
         exit(1)
