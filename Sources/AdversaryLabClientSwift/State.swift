@@ -10,6 +10,12 @@ import SwiftQueue
 import AdversaryLabClient
 import SwiftPCAP
 
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+    import Darwin
+#elseif os(Linux)
+    import Glibc
+#endif
+
 class State
 {
     var maybeAllowBlock: Bool? = nil
@@ -61,7 +67,10 @@ class State
         }
         // This tells us that we are done recording and the buffered packets
         // are either allowed or blocked based on user input.
+        self.recording = false
         allowBlockChannel.enqueue(allowBlock)
+        self.saveCaptured()
+        exit(0)
     }
     
     func capture()
@@ -96,6 +105,7 @@ class State
             
             print("read packets from interface")
             self.readPackets(source: packetSource, dest: packetChannel, port: port)
+            
         }
     }
     
@@ -114,21 +124,12 @@ class State
                 {
                     //fix, is this the correct way to end reading and record to DB?
                     print("\n\nEnd of PCAP file reached.\n")
-                    print("Press CTRL-C to end and save to database.")
-                    print("Fix so that we save to db automatically")
+                    #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+                        _ = Darwin.raise(SIGINT)
+                    #elseif os(Linux)
+                        _ = Glibc.raise(SIGINT)
+                    #endif
                     
-                    print("event handler happened")
-                    
-                    // Restore default signal handling, which means killing the app
-                    signal(SIGINT, SIG_DFL)
-                    
-                    self.recording = false
-                    if self.allowBlockChannel.isEmpty
-                    {
-                        self.allowBlockChannel.enqueue(true)
-                    }
-                    self.saveCaptured()
-                    exit(0)
                 }
                 
                 sleep(1) //wait for a packet

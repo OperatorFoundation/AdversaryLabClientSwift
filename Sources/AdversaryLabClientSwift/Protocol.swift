@@ -323,6 +323,11 @@ public struct Client
                 
                 if response.isError
                 {
+//                    guard let string: String = (response.value as? String) else { continue }
+//                    if string.contains("Database `HTTPS` already exists")
+//                    {
+//                        
+//                    }
                     print("Error creating database \(response), perhaps already created")
                 }
                 

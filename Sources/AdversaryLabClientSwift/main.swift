@@ -48,6 +48,7 @@ struct AdversaryLabClientSwift: ParsableCommand
     //allowBlock is required if pcap file is used - currently parameters specified by argument position
     //   parameters should ultimately use flags
     //dest ip filter, AdversaryLabClient <transport> <port> [ip address] [protocol]
+    //flag to save partials
     
     /*
      Future:
@@ -148,15 +149,9 @@ struct AdversaryLabClientSwift: ParsableCommand
                         return
                     }
                     
-                    let state = startCapture(transport: self.transport, port: selectedPort, client: client)
+                    let state = startCapture(transport: self.transport, port: selectedPort, client: client, allowBlock: nil)
                     
-                    // Buffering Mode
-                    // The user has not yet indicated which category this data belongs to.
-                    // Buffer the data until the user enters 'allowed' or 'blocked'.
-                    state.queue.async
-                        {
-                            state.listenForDataCategory()
-                    }
+                    
             }
             dispatchMain()
         }
@@ -185,17 +180,17 @@ struct AdversaryLabClientSwift: ParsableCommand
             print("streaming mode - packets will be classified as \(ab)ed")
             
             Connect
+            {
+                maybeClient in
+                
+                guard let client = maybeClient else
                 {
-                    maybeClient in
+                    print("Could not connect to RethinkDB")
+                    return
+                }
+                
+                let state = startCapture(transport: self.transport, port: selectedPort, client: client, allowBlock: allowBlock)
                     
-                    guard let client = maybeClient else
-                    {
-                        print("Could not connect to RethinkDB")
-                        return
-                    }
-                    
-                    let state = startCapture(transport: self.transport, port: selectedPort, client: client)
-                    state.maybeAllowBlock = allowBlock
             }
             dispatchMain()
         }
@@ -204,7 +199,7 @@ struct AdversaryLabClientSwift: ParsableCommand
 
 AdversaryLabClientSwift.main()
 
-func startCapture(transport: String, port: UInt16, client: Client) -> State
+func startCapture(transport: String, port: UInt16, client: Client, allowBlock: Bool?)
 {
     let state = State(transport: transport, port: port, client: client)
     
@@ -228,8 +223,25 @@ func startCapture(transport: String, port: UInt16, client: Client) -> State
             exit(0)
     }
     source.resume()
+    
+    if allowBlock == nil
+    {
+        // Buffering Mode
+        // The user has not yet indicated which category this data belongs to.
+        // Buffer the data until the user enters 'allowed' or 'blocked'.
+        state.queue.async
+            {
+                state.listenForDataCategory()
+        }
+    }
+    else
+    {
+        state.maybeAllowBlock = allowBlock
+    }
+    
+    
     state.capture()
-    return state
+    
 }
 
 func usage()

@@ -459,6 +459,10 @@ final class ParserTests: XCTestCase
     //        //XCTFail()
     //    }
     
+    //write test for synthetic packet construction, test to see if data out is as expected
+    //let ethernet = Ethernet(MACDestination: <#T##Data#>, MACSource: <#T##Data#>, type: <#T##EtherType#>, tag1: <#T##Data?#>, tag2: <#T##Data?#>, payload: <#T##Data#>)
+    
+    
     func testEthernetInitFails()
     {
         //sample source: https://wiki.wireshark.org/SampleCaptures?action=AttachFile&do=get&target=tcp-ethereal-file1.trace

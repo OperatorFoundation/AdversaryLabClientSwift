@@ -338,6 +338,8 @@ extension Ethernet: MaybeDatable
         self.payload = payload
     }
     
+    
+    
     public var data: Data
     {
         DatableConfig.endianess = .big
