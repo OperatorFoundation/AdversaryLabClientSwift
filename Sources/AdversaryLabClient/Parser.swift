@@ -127,16 +127,24 @@ public struct IPv4
 {
     //http://www.networksorcery.com/enp/protocol/ip.htm
     
-    public let version: UInt8 //4 bits
-    public let IHL: UInt8 //4 bits
-    public let DSCP: UInt8 //6 bits
-    public let ECN: UInt8 //2 bits
+    public let version: Bits //UInt8 //4 bits
+    public let IHL: Bits //UInt8 //4 bits
+    
+    public let DSCP: Bits //UInt8 //6 bits
+    public let ECN: Bits //UInt8 //2 bits
+    
+    
     public let length: UInt16 //2 bytes   --number
     public let identification: UInt16 //2 bytes
-    public let reservedBit: UInt8 //1 bit
-    public let dontFragment: UInt8 //1 bit
-    public let moreFragments: UInt8 //1 bit
-    public let fragmentOffset: UInt16 //13 bits   --number
+    
+    
+    public let reservedBit: Bool //UInt8 //1 bit //bool
+    public let dontFragment: Bool //UInt8 //1 bit //bool
+    public let moreFragments: Bool //UInt8 //1 bit //bool
+    
+    public let fragmentOffset: Bits //UInt16 //13 bits   --number
+    
+    
     public let ttl: UInt8 //1 byte   --number
     public let protocolNumber: IPprotocolNumber //UInt8 //1 byte
     public let checksum: UInt16 //2 bytes
@@ -380,27 +388,28 @@ extension IPv4: MaybeDatable
         //unpack a byte then parse into bits
         guard let VerIHL = bits.unpack(bytes: 1) else { return nil }
         var VerIHLbits = Bits(data: VerIHL)
+        
         guard let version = VerIHLbits.unpack(bits: 4) else { return nil }
         guard let versionUint8 = version.uint8 else { return nil }
-        self.version = versionUint8
-        print("Version: 0x" + String(format: "%02x", self.version))
+        self.version = version //Uint8
+        print("Version: 0x" + String(format: "%02x", versionUint8))
         
         guard let IHL = VerIHLbits.unpack(bits: 4) else { return nil }
         guard let IHLUint8 = IHL.uint8 else { return nil }
-        self.IHL = IHLUint8
-        print("IHL: 0x" + String(format: "%02x", self.IHL))
+        self.IHL = IHL //Uint8
+        print("IHL: 0x" + String(format: "%02x", IHLUint8))
         
         guard let DSCPECN = bits.unpack(bytes: 1) else { return nil }
         var DSCPECNbits = Bits(data: DSCPECN)
         guard let DSCP = DSCPECNbits.unpack(bits: 6) else { return nil }
         guard let DSCPUint8 = DSCP.uint8 else { return nil }
-        self.DSCP = DSCPUint8
-        print("DSCP: 0x" + String(format: "%02x", self.DSCP))
+        self.DSCP = DSCP //Uint8
+        print("DSCP: 0x" + String(format: "%02x", DSCPUint8))
         
         guard let ECN = DSCPECNbits.unpack(bits: 2) else { return nil }
         guard let ECNUint8 = ECN.uint8 else { return nil }
-        self.ECN = ECNUint8
-        print("ECN: 0x" + String(format: "%02x", self.ECN))
+        self.ECN = ECN //Uint8
+        print("ECN: 0x" + String(format: "%02x", ECNUint8))
         
         DatableConfig.endianess = .big
         guard let length = bits.unpack(bytes: 2) else { return nil }
@@ -417,26 +426,22 @@ extension IPv4: MaybeDatable
         guard let flagsFragmentOffset = bits.unpack(bytes: 2) else { return nil }
         var flagsFragmentOffsetbits = Bits(data: flagsFragmentOffset)
         
-        guard let reservedBit = flagsFragmentOffsetbits.unpack(bits: 1) else { return nil }
-        guard let dontFragment = flagsFragmentOffsetbits.unpack(bits: 1) else { return nil }
-        guard let moreFragments = flagsFragmentOffsetbits.unpack(bits: 1) else { return nil }
+        guard let reservedBit = flagsFragmentOffsetbits.unpackBool() else { return nil }
+        guard let dontFragment = flagsFragmentOffsetbits.unpackBool() else { return nil }
+        guard let moreFragments = flagsFragmentOffsetbits.unpackBool() else { return nil }
         
-        guard let reservedBitUint8 = reservedBit.uint8 else { return nil }
-        guard let dontFragmentUint8 = dontFragment.uint8 else { return nil }
-        guard let moreFragmentsUint8 = moreFragments.uint8 else { return nil }
+        self.reservedBit = reservedBit
+        self.dontFragment = dontFragment
+        self.moreFragments = moreFragments
         
-        self.reservedBit = reservedBitUint8
-        self.dontFragment = dontFragmentUint8
-        self.moreFragments = moreFragmentsUint8
-        
-        print("reservedBit: 0x" + String(format: "%02x", self.reservedBit) + " - 0b" + String(self.reservedBit, radix: 2))
-        print("dontFragment: 0x" + String(format: "%02x", self.dontFragment) + " - 0b" + String(self.dontFragment, radix: 2))
-        print("moreFragments: 0x" + String(format: "%02x", self.moreFragments) + " - 0b" + String(self.moreFragments, radix: 2))
+        print("reservedBit: " + String(self.reservedBit) )
+        print("dontFragment: " + String(self.dontFragment) )
+        print("moreFragments: " + String(self.moreFragments) )
         
         guard let fragmentOffset = flagsFragmentOffsetbits.unpack(bits: 13) else { return nil }
         guard let fragmentOffsetUint16 = fragmentOffset.uint16 else { return nil }
-        self.fragmentOffset = fragmentOffsetUint16
-        print("FragmentOffset: 0d" + String(format: "%u", self.fragmentOffset))
+        self.fragmentOffset = fragmentOffset //Uint16
+        print("FragmentOffset: 0d" + String(format: "%u", fragmentOffsetUint16))
         
         guard let ttl = bits.unpack(bytes: 1) else { return nil }
         let ttlUint8 = ttl.uint8
@@ -448,7 +453,6 @@ extension IPv4: MaybeDatable
         print("ProtocolNumber: 0d" + String(format: "%u", protocolNumberUint8 ))
         guard let protocolNumType = IPprotocolNumber(data: protocolNumber) else { return nil }
         self.protocolNumber = protocolNumType
-        
         
         DatableConfig.endianess = .big
         guard let checksum = bits.unpack(bytes: 2) else { return nil }
@@ -493,16 +497,24 @@ extension IPv4: MaybeDatable
     {
         DatableConfig.endianess = .big
         var result = Data()
-        result.append(version.data)
-        result.append(IHL)
-        result.append(DSCP)
-        result.append(ECN)
+        
+        var verIHLDSCPECN: Bits = Bits()
+        let _ = verIHLDSCPECN.pack(bits: version) //4bits
+        let _ = verIHLDSCPECN.pack(bits: IHL) //4bits
+        let _ = verIHLDSCPECN.pack(bits: DSCP) //6bits
+        let _ = verIHLDSCPECN.pack(bits: ECN) //2bits
+        result.append(verIHLDSCPECN.data)
+        
         result.append(length.data)
         result.append(identification.data)
-        result.append(reservedBit)
-        result.append(dontFragment)
-        result.append(moreFragments)
-        result.append(fragmentOffset.data)
+        
+        var flagsFragOff: Bits = Bits()
+        let _ = flagsFragOff.pack(bool: reservedBit) //1 bit
+        let _ = flagsFragOff.pack(bool: dontFragment) //1 bit
+        let _ = flagsFragOff.pack(bool: moreFragments) //1 bit
+        let _ = flagsFragOff.pack(bits: fragmentOffset) //13 bits
+        result.append(flagsFragOff.data)
+        
         result.append(ttl)
         if let protocolNumberData = protocolNumber.data
         {

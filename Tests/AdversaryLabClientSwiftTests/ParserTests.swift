@@ -176,10 +176,11 @@ final class ParserTests: XCTestCase
         let correctIPv4ECN: UInt8 = 0x00 //(48)
         let correctIPv4length: UInt16 = 0x0030
         let correctIPv4identification: UInt16 = 0x0000
+ 
         //let correctIPv4flags: UInt8 = 0b010 //UInt8 3 bits
-        let correctIPv4reservedBit: UInt8 = 0b0
-        let correctIPv4dontFragment: UInt8 = 0b1
-        let correctIPv4moreFragments: UInt8 = 0b0
+        let correctIPv4reservedBit: Bool = false
+        let correctIPv4dontFragment: Bool = true
+        let correctIPv4moreFragments: Bool = false
         let correctIPv4fragmentOffset: UInt16 = 0x0000
         let correctIPv4ttl: UInt8 = 0x34 //(52)
         
@@ -187,7 +188,6 @@ final class ParserTests: XCTestCase
             XCTFail()
             return
         }
-        
         
         
         let correctIPv4checksum: UInt16 = 0x2dc9
@@ -199,30 +199,6 @@ final class ParserTests: XCTestCase
             0x99, 0x5f, 0xcf, 0x79, 0x70, 0x12, 0x05, 0xb4,
             0x0b, 0xeb, 0x00, 0x00, 0x02, 0x04, 0x05, 0xb4,
             0x01, 0x01, 0x04, 0x02])
-        
-        let correctIPV4data: Data = Data(array:[
-            0x04, //ver
-            0x05, //ihl
-            0x00, //dscp
-            0x00, //ecn
-            0x00, 0x30, //length
-            0x00, 0x00, //identification
-            0x00, //reserved bit
-            0x01, //don't fragment
-            0x00, //morefragments
-            0x00, 0x00, //fragment offset
-            0x34, //ttl
-            0x06, //protocol number
-            0x2d, 0xc9, //checksum
-            0x80, 0x77, 0xf5, 0x0c, //source address
-            0x83, 0xd4, 0x1f, 0xa7, //destination address
-            //no options
-            //payload
-            0x00, 0x50, 0x08, 0x30, 0x3d, 0xe4, 0xa9, 0x33,
-            0x99, 0x5f, 0xcf, 0x79, 0x70, 0x12, 0x05, 0xb4,
-            0x0b, 0xeb, 0x00, 0x00, 0x02, 0x04, 0x05, 0xb4,
-            0x01, 0x01, 0x04, 0x02
-        ])
         
         if let epacket = Ethernet(data: packetBytes)
         {
@@ -238,16 +214,34 @@ final class ParserTests: XCTestCase
             
             if let IPv4part = IPv4(data: epacket.payload)
             {
-                XCTAssertEqual(IPv4part.version, correctIPv4version)
-                XCTAssertEqual(IPv4part.IHL, correctIPv4IHL)
-                XCTAssertEqual(IPv4part.DSCP, correctIPv4DSCP)
-                XCTAssertEqual(IPv4part.ECN, correctIPv4ECN)
+                guard let IPv4partVersion = IPv4part.version.uint8 else { XCTFail(); return }
+                XCTAssertEqual(IPv4partVersion, correctIPv4version)
+                
+                guard let IPv4partIHL = IPv4part.IHL.uint8 else { XCTFail(); return }
+                XCTAssertEqual(IPv4partIHL, correctIPv4IHL)
+                
+                guard let IPv4partDSCP = IPv4part.DSCP.uint8 else { XCTFail(); return }
+                XCTAssertEqual(IPv4partDSCP, correctIPv4DSCP)
+                
+                guard let IPv4partECN = IPv4part.ECN.uint8 else { XCTFail(); return }
+                XCTAssertEqual(IPv4partECN, correctIPv4ECN)
+                
+                
+                
                 XCTAssertEqual(IPv4part.length, correctIPv4length)
                 XCTAssertEqual(IPv4part.identification, correctIPv4identification)
+                
+                
                 XCTAssertEqual(IPv4part.reservedBit, correctIPv4reservedBit)
+                
                 XCTAssertEqual(IPv4part.dontFragment, correctIPv4dontFragment)
+                
                 XCTAssertEqual(IPv4part.moreFragments, correctIPv4moreFragments)
-                XCTAssertEqual(IPv4part.fragmentOffset, correctIPv4fragmentOffset)
+                
+                guard let IPv4partFragmentOffset = IPv4part.fragmentOffset.uint16 else { XCTFail(); return }
+                XCTAssertEqual(IPv4partFragmentOffset, correctIPv4fragmentOffset)
+                
+                
                 XCTAssertEqual(IPv4part.ttl, correctIPv4ttl)
                 XCTAssertEqual(IPv4part.protocolNumber, correctIPv4protocolNumber)
                 XCTAssertEqual(IPv4part.checksum, correctIPv4checksum)
@@ -257,7 +251,7 @@ final class ParserTests: XCTestCase
                 XCTAssertEqual(IPv4part.payload, correctIPv4payload)
                 
                 let IPV4partData = IPv4part.data
-                XCTAssertEqual(IPV4partData, correctIPV4data)
+                XCTAssertEqual(IPV4partData, correctPayload)
             }
             else
             {

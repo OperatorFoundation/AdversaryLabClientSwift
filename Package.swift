@@ -15,7 +15,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", from: "0.0.3"),
         .package(url: "https://github.com/OperatorFoundation/SwiftPCAP.git", from: "1.1.6"),
-        .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "2.0.0"),
+        .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "2.0.2"),
         .package(url: "https://github.com/OperatorFoundation/rethink-swift.git", from: "1.0.0"),
         .package(url: "https://github.com/OperatorFoundation/Song.git", from: "0.0.6"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1"),
