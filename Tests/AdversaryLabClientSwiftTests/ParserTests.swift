@@ -301,15 +301,15 @@ final class ParserTests: XCTestCase
         let correctAcknowledgementNumber: Data = Data(array: [0xc0, 0x40, 0x87, 0xcf])
         let correctOffset: UInt8 = 0x08
         let correctReserved: UInt8 = 0b000
-        let correctNS: UInt8 = 0b0
-        let correctCWR: UInt8 = 0b0
-        let correctECE: UInt8 = 0b0
-        let correctURG: UInt8 = 0b0
-        let correctACK: UInt8 = 0b1
-        let correctPSH: UInt8 = 0b1
-        let correctRST: UInt8 = 0b0
-        let correctSYN: UInt8 = 0b0
-        let correctFIN: UInt8 = 0b0
+        let correctNS: Bool = false //UInt8 = 0b0
+        let correctCWR: Bool = false //UInt8 = 0b0
+        let correctECE: Bool = false //UInt8 = 0b0
+        let correctURG: Bool = false //UInt8 = 0b0
+        let correctACK: Bool = true //UInt8 = 0b1
+        let correctPSH: Bool = true //UInt8 = 0b1
+        let correctRST: Bool = false //UInt8 = 0b0
+        let correctSYN: Bool = false //UInt8 = 0b0
+        let correctFIN: Bool = false //UInt8 = 0b0
         let correctWindowSize: UInt16 = 0x7d78
         let correctCheckSum: UInt16 = 0x790a
         let correctUrgentPointer: UInt16 = 0x0000
@@ -351,8 +351,13 @@ final class ParserTests: XCTestCase
             XCTAssertEqual(TCPsegment.destinationPort, correctDestinationPort)
             XCTAssertEqual(TCPsegment.sequenceNumber, correctSequenceNumber)
             XCTAssertEqual(TCPsegment.acknowledgementNumber, correctAcknowledgementNumber)
-            XCTAssertEqual(TCPsegment.offset, correctOffset)
-            XCTAssertEqual(TCPsegment.reserved, correctReserved)
+            
+            guard let TCPsegmentOffset = TCPsegment.offset.uint8 else { XCTFail(); return }
+            XCTAssertEqual(TCPsegmentOffset, correctOffset)
+            
+            guard let TCPsegmentReserved = TCPsegment.reserved.uint8 else { XCTFail(); return }
+            XCTAssertEqual(TCPsegmentReserved, correctReserved)
+            
             XCTAssertEqual(TCPsegment.ns, correctNS)
             XCTAssertEqual(TCPsegment.cwr, correctCWR)
             XCTAssertEqual(TCPsegment.ece, correctECE)
@@ -369,7 +374,7 @@ final class ParserTests: XCTestCase
             XCTAssertEqual(TCPsegment.payload, correctPayload)
             
             let TCPsegmentData = TCPsegment.data
-            XCTAssertEqual(TCPsegmentData, correctDataBytes)
+            XCTAssertEqual(TCPsegmentData, packetTCPBytes)
         }
         else
         {
