@@ -6,10 +6,10 @@
 //
 
 import Foundation
-import AdversaryLabClient
 import Rethink
 import Dispatch
 import Song
+import InternetProtocols
 
 let packetsKey: String = "Packets"
 

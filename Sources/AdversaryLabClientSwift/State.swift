@@ -7,8 +7,8 @@
 
 import Foundation
 import SwiftQueue
-import AdversaryLabClient
 import SwiftPCAP
+import InternetProtocols
 
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
     import Darwin

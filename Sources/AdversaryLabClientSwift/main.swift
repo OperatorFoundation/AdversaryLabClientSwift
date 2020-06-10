@@ -1,9 +1,9 @@
 import Foundation
 import SwiftPCAP
 import SwiftQueue
-import AdversaryLabClient
 import Dispatch
 import ArgumentParser
+import InternetProtocols
 
 var validPCAPfile: String = ""
 var sourceReadFromFile: Bool = false //false = read from interface (default), true = read from file
