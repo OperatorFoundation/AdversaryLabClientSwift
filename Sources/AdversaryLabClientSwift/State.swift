@@ -99,7 +99,6 @@ class State
                 return
             }
             
-            print("read packets from file")
             self.readPackets(source: packetSource, dest: packetChannel, port: port)
             
         default : //read from network interface
@@ -109,22 +108,20 @@ class State
                 return
             }
             
-            print("read packets from interface")
             self.readPackets(source: packetSource, dest: packetChannel, port: port)
-            
         }
     }
     
     func readPackets(source: SwiftPCAP.Base, dest: Queue<Packet>, port: UInt16)
     {
-        print("reading packets")
+        print("-> reading packets")
         while self.recording
         {
             let bytes = source.nextPacket()
             
             if bytes.count == 0
             {
-                print("\n\n_", terminator: "")
+                //print("\n_", terminator: "\n")
                 
                 if sourceReadFromFile //reading from file and have reached the end of file
                 {
@@ -143,8 +140,8 @@ class State
             else
             {
                 debug_packetCount += 1
-                print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
-                printBytes(bytes)
+                //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
+                // printBytes(bytes)
                 
                 let thisPacket = Packet(rawBytes: Data(bytes)) //parse the packet
                 
@@ -178,11 +175,11 @@ class State
     
     func capturePort(_ packet: Packet, _ port: UInt16)
     {
-        print("-> Capturing port \(port)")
+        //print("-> Capturing port \(port)")
 
         guard let conn = NewConnection(packet: packet) else { return }
         
-        print(conn)
+        //print(conn)
         
         guard conn.CheckPort(port: port) else { return }
         debug_portMatchPacketsCount += 1
@@ -198,7 +195,6 @@ class State
     
     func recordRawPacket(_ packet: Packet, _ port: UInt16)
     {
-        print("Entered recordRawPacket")
         guard let conn = NewConnection(packet: packet) else { return }
         //let incoming = packet.destinationPort == port
         guard let TCPsegment = packet.tcp else { return }
@@ -219,7 +215,6 @@ class State
     
     func recordPacket(_ packet: Packet, _ port: UInt16)
     {
-        print("record packet")
         guard let conn = NewConnection(packet: packet) else { return }
         guard let TCPsegment = packet.tcp else { return }
         let incoming = TCPsegment.destinationPort == port
@@ -262,7 +257,7 @@ class State
         
         while !recordable.isEmpty
         {
-            print("Saving complete connections")
+            print("-> Saving complete connections")
             guard let connPackets = recordable.dequeue() else
             {
                 print(".")
@@ -271,19 +266,19 @@ class State
             
             if let allowBlock = maybeAllowBlock
             {
-                print("**")
+                print("-> **")
                 guard let allowBlock = maybeAllowBlock else
                 {
                     print("-")
                     return
                 }
-                print("*")
+                print("-> *")
                 lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
                 debug_addTrainPacketCount += 1
             }
             else
             {
-                print("+")
+                print("-> +")
                 buffer.append(connPackets)
             }
         }
@@ -292,7 +287,7 @@ class State
 //            print("No complete connections to save.")
 //        }
         
-        print("@")
+        print("-> @")
         var allowBlock = false
         if let cmdLineAllowBlock = maybeAllowBlock
         {
@@ -334,7 +329,7 @@ class State
         // This is still a valid blocked case. We expect that some blocked connections will behave in this way.
         
         //If the connections in this map are labeled blocked by the user
-        print("newAllowBlock is ", allowBlock)
+        print("-> newAllowBlock is ", allowBlock)
         if allowBlock == false
         {
             print("-> Captured count is ", captured.count)
@@ -342,7 +337,7 @@ class State
             {
                 for (index, (_, connection)) in captured.enumerated()
                 {
-                    print("Entering loop for saving incomplete connections. (\(index+1)/\(captured.count))")
+                    //print("Entering loop for saving incomplete connections. (\(index+1)/\(captured.count))")
                     // If this connection in the map is incomplete (only the incoming packet was captured) save it
                     // Check this because a complete struct (both incoming and outgoing packets are populated)
                     // will already be getting saved by the above for loop
@@ -356,18 +351,16 @@ class State
                 }
             }
         }
+        
         lab.saveWithSong()
         
-        print("total packet count = \(debug_packetCount)")
-        print("port match packet count = \(debug_portMatchPacketsCount)")
-        print("payload packet count = \(debug_payloadPacketsCount)")
-        print("payload recorded packet count = \(debug_recordedPacketsCount)")
-        print("payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
-        print("add train packet count = \(debug_addTrainPacketCount)")
-        print("add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
-        
-        
-        
+        print("-> total packet count = \(debug_packetCount)")
+        print("-> port match packet count = \(debug_portMatchPacketsCount)")
+        print("-> payload packet count = \(debug_payloadPacketsCount)")
+        print("-> payload recorded packet count = \(debug_recordedPacketsCount)")
+        print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
+        print("-> add train packet count = \(debug_addTrainPacketCount)")
+        print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
         print("--> We are done saving things to the database. Bye now!\n")
         exit(1)
     }

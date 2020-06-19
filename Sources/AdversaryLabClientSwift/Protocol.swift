@@ -45,7 +45,6 @@ public struct Client
 
     func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
-        print("addtrainpk")
         let connID = connectionID()
         
         guard let EthernetPacket = conn.Incoming.ethernet else
@@ -80,24 +79,26 @@ public struct Client
             "handshake": true //true because add train is only called for handshake packets
         ]
         
-        print("Actually writing to database")
         self.lockReThink.enter()
+        
+        // FIXME: Check if DB already exists.
         R.dbCreate(transport).run(connection)
         {
-            response in
-            print("add train packet - database callback was called")
+            (response) in
+            
             if response.isError
             {
-                print("Error creating database \(response), perhaps already created")
+                //print("Error creating database \(response), perhaps already created")
             }
             
+            // FIXME: Check if table already exists first
             R.db(transport).tableCreate(packetsKey).run(self.connection)
             {
-                response in
+                (response) in
                 
                 if response.isError
                 {
-                    print("Error creating table \(response), perhaps already created")
+                    //print("Error creating table \(response), perhaps already created")
                 }
                 
                 R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
@@ -110,7 +111,6 @@ public struct Client
                         self.lockReThink.leave()
                         return
                     }
-                    print("Successfully wrote document to database.")
                     self.lockReThink.leave()
                 }
             }
@@ -151,24 +151,26 @@ public struct Client
                 "handshake": true //true because add train is only called for handshake packets
             ]
             
-            print("Actually writing to database")
             self.lockReThink.enter()
+            
+            // FIXME: Check if DB already exists.
             R.dbCreate(transport).run(connection)
             {
-                response in
-                print("add train packet - database callback was called")
+                (response) in
+                
                 if response.isError
                 {
-                    print("Error creating database \(response), perhaps already created")
+                    //print("Error creating database \(response), perhaps already created")
                 }
                 
+                // FIXME: Check if table already exists first
                 R.db(transport).tableCreate(packetsKey).run(self.connection)
                 {
-                    response in
+                    (response) in
                     
                     if response.isError
                     {
-                        print("Error creating table \(response), perhaps already created")
+                        //print("Error creating table \(response), perhaps already created")
                     }
                     
                     R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
@@ -184,7 +186,6 @@ public struct Client
                             return
                         }
                         
-                        print("Successfully wrote document to database.")
                         self.lockReThink.leave()
                     }
                 }
@@ -197,8 +198,6 @@ public struct Client
         
         for packet in conn.Incoming
         {
-            
-            print("add raw train pk")
             let connID = connectionID()
             
             guard let EthernetPacket = packet.ethernet else
@@ -234,27 +233,27 @@ public struct Client
                 "in_out": true, //true = incoming
                 "handshake": false //
             ]
-            
-            print("Actually writing to database")
-            
+                        
             self.lockReThink.enter()
+            
+            // FIXME: Check if DB already exists.
             R.dbCreate(transport).run(connection)
             {
-                response in
-                print("add raw train packet incoming - database callback was called")
+                (response) in
                 
                 if response.isError
                 {
-                    print("Error creating database \(response), perhaps already created")
+                    //print("Error creating database \(response), perhaps already created")
                 }
                 
+                // FIXME: Check if table already exists first
                 R.db(transport).tableCreate(packetsKey).run(self.connection)
                 {
-                    response in
+                    (response) in
                     
                     if response.isError
                     {
-                        print("Error creating table \(response), perhaps already created")
+                        //print("Error creating table \(response), perhaps already created")
                     }
                     
                     R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
@@ -268,17 +267,14 @@ public struct Client
                             return
                         }
                         self.lockReThink.leave()
-                        print("Successfully wrote document to database.")
-                        
                     }
                 }
             }
             self.lockReThink.wait()
         }
         
-        for (index, packet) in conn.Outgoing.enumerated()
+        for (_, packet) in conn.Outgoing.enumerated()
         {
-            print("add raw train pk")
             let connID = connectionID()
             guard let EthernetPacket = packet.ethernet else
             {
@@ -312,14 +308,13 @@ public struct Client
                 "in_out": false, //true = incoming, false=outgoing
                 "handshake": false //
             ]
-            
-            print("Actually writing to database")
-            
+                        
             self.lockReThink.enter()
+            
+            // FIXME: Check if DB already exists.
             R.dbCreate(transport).run(connection)
             {
-                response in
-                print("add raw train packet outgoing - database callback was called")
+                (response) in
                 
                 if response.isError
                 {
@@ -328,16 +323,17 @@ public struct Client
 //                    {
 //                        
 //                    }
-                    print("Error creating database \(response), perhaps already created")
+                    //print("Error creating database \(response), perhaps already created")
                 }
                 
+                // FIXME: Check if tablealready exists first
                 R.db(transport).tableCreate(packetsKey).run(self.connection)
                 {
-                    response in
+                    (response) in
                     
                     if response.isError
                     {
-                        print("Error creating table \(response), perhaps already created")
+                        //print("Error creating table \(response), perhaps already created")
                     }
                     
                     R.db(transport).table(packetsKey).insert([rawPacket]).run(self.connection)
@@ -351,9 +347,7 @@ public struct Client
                             return
                         }
                         
-                        print("Successfully wrote document to database.")
                         self.lockReThink.leave()
-                        
                     }
                 }
             }
@@ -364,7 +358,6 @@ public struct Client
     
     mutating func AddTrainPacketSong(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
-        print("AddTrainPacketSong !!!")
         let connID = connectionID()
         
         guard let EthernetPacket = conn.Incoming.ethernet else { return }
@@ -388,7 +381,6 @@ public struct Client
     
     func saveWithSong()
     {
-        print("Saving \(packetDatabase.count) packets with song")
         let songEncoder = SongEncoder()
         if let encodedBytes = try? songEncoder.encode(packetDatabase)
         {
