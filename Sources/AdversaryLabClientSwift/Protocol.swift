@@ -25,13 +25,13 @@ public struct RawPacket: Codable
     let handshake: Bool
 }
 
-public struct ConnectionPackets
+public struct ConnectionPackets: Codable
 { //first incoming/outgoing relative to server
     var Incoming: Packet
     var Outgoing: Packet?
 }
 
-public struct RawConnectionPackets
+public struct RawConnectionPackets: Codable
 { //all packets
     var Incoming: [Packet] = []
     var Outgoing: [Packet] = []

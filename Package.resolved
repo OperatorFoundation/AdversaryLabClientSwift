@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/Bits.git",
         "state": {
           "branch": null,
-          "revision": "4c972c977aa3aa5f78526fcc0c62a0484ec41284",
-          "version": "1.0.2"
+          "revision": "86f474e03dd16566ca98323b34f4989353bfe4e0",
+          "version": "1.0.3"
         }
       },
       {
@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/InternetProtocols.git",
         "state": {
           "branch": null,
-          "revision": "c95fd70620aa3a76745a5fe4af7cea857bb9c98b",
-          "version": "1.0.0"
+          "revision": "ddc9e4d42ad7d8fc5d83e8b6da1dc73622c80387",
+          "version": "1.0.1"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/Song.git",
         "state": {
           "branch": null,
-          "revision": "94105d5024b6aa515bac6136dbe29c08535ce60f",
-          "version": "0.0.6"
+          "revision": "13a2c3e217ff1b75089e5a3c06fb675a60944b51",
+          "version": "0.0.12"
         }
       },
       {
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-argument-parser.git",
         "state": {
           "branch": null,
-          "revision": "9f04d1ff1afbccd02279338a2c91e5f27c45e93a",
-          "version": "0.0.5"
+          "revision": "3d79b2b5a2e5af52c14e462044702ea7728f5770",
+          "version": "0.1.0"
         }
       },
       {

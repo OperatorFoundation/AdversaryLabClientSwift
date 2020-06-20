@@ -8,23 +8,28 @@
 import Foundation
 import Rethink
 import Dispatch
-import Song
+import Symphony
 import InternetProtocols
 
 public struct SongClient
 {
-    var packetDatabase: [RawPacket] = []
-
+    let db = Symphony(root: URL(fileURLWithPath: "adversary_data"))
+    
     mutating func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
     {
+        guard var sequence = db.readSequence(type: RawPacket.self, at: URL(fileURLWithPath: transport)) else
+        {
+            return
+        }
+        
         for incomingInput in conn.Incoming
         {
             guard let incoming = makePacket(input: incomingInput, allowBlock: allowBlock, inOut: true, handshake: false) else
             {
                 continue
             }
-            
-            packetDatabase.append(incoming)
+
+            sequence.append(incoming)
         }
         
         for outgoingInput in conn.Outgoing
@@ -33,23 +38,28 @@ public struct SongClient
             {
                 continue
             }
-            
-            packetDatabase.append(outgoing)
+
+            sequence.append(outgoing)
         }
     }
     
     mutating func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
+        guard var sequence = db.readSequence(type: RawPacket.self, at: URL(fileURLWithPath: transport)) else
+        {
+            return
+        }
+        
         if let incoming = makePacket(input: conn.Incoming, allowBlock: allowBlock, inOut: true, handshake: true)
         {
-            packetDatabase.append(incoming)
+            sequence.append(incoming)
         }
         
         if let outgoingInput = conn.Outgoing
         {
             if let outgoing = makePacket(input: outgoingInput, allowBlock: allowBlock, inOut: false, handshake: true)
             {
-                packetDatabase.append(outgoing)
+                sequence.append(outgoing)
             }
         }
     }
@@ -73,43 +83,7 @@ public struct SongClient
             in_out: inOut,
             handshake: handshake
         )
-    }
-    
-    func saveWithSong()
-    {
-        print("Saving \(packetDatabase.count) packets with song")
-        let songEncoder = SongEncoder()
-        guard let encodedBytes = try? songEncoder.encode(packetDatabase) else
-        {
-            return
-        }
-
-        let encoded = String(data: encodedBytes)
-        print("Song Encoded:")
-        print(encoded)
-        
-        let dir = URL(fileURLWithPath: "packetDatabase", isDirectory: true)
-        do
-        {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: false, attributes: nil)
-        }
-        catch
-        {
-            print("Could not create directory \(error)")
-        }
-        
-        let uuid = UUID().uuidString
-        let file = URL(fileURLWithPath: uuid, relativeTo: dir)
-        
-        do
-        {
-            try encodedBytes.write(to: file)
-        }
-        catch
-        {
-            print("Could not write file \(error)")
-        }
-    }
+    }    
 }
 
 public func ConnectSong(callback: @escaping (SongClient?) -> Void)
