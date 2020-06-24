@@ -33,16 +33,19 @@ class State
     var debug_addTrainPacketCount = 0
     var debug_savedIncompletePacketCount = 0
     var lab: Client
+    var songLab: SongClient
     let transport: String
     let port: UInt16
     var recording: Bool
     
-    init(transport: String, port: UInt16, client: Client)
+    init(transport: String, port: UInt16, client: Client, songClient: SongClient)
     {
         self.transport = transport
         self.port = port
         self.lab = client
         self.recording = true
+        songLab = songClient
+        
     }    
     
     func listenForDataCategory()
@@ -53,7 +56,16 @@ class State
         while !allowBlockWasSet
         {
             print("-> Type 'allow' or 'block' when you are done recording <-\n")
-            let text = readLine(strippingNewline: true)
+            guard let text = readLine(strippingNewline: true) else
+            {
+                #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+                    _ = Darwin.raise(SIGINT)
+                #elseif os(Linux)
+                    _ = Glibc.raise(SIGINT)
+                #endif
+                return
+            }
+            
             if text == "allow"
             {
                 print("-> This packet data will be saved as allowed.")
@@ -118,6 +130,7 @@ class State
         while self.recording
         {
             let bytes = source.nextPacket()
+            
             
             if bytes.count == 0
             {
@@ -274,6 +287,7 @@ class State
                 }
                 print("-> *")
                 lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
+                songLab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
                 debug_addTrainPacketCount += 1
             }
             else
@@ -308,7 +322,7 @@ class State
             {
                 print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
                 lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
-                lab.AddTrainPacketSong(transport: transport, allowBlock: allowBlock, conn: packet)
+                songLab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
                 debug_addTrainPacketCount += 1
             }
         }
@@ -320,6 +334,7 @@ class State
                 print("-> Saving complete raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
                 var last: Bool = false
                 lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
+                songLab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
             }
         }
         
@@ -345,6 +360,7 @@ class State
                     {
                         print("-> Saving incomplete connection.  --<-@")
                         lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
+                        songLab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
                         debug_addTrainPacketCount += 1
                         debug_savedIncompletePacketCount += 1
                     }
@@ -352,7 +368,7 @@ class State
             }
         }
         
-        lab.saveWithSong()
+        
         
         print("-> total packet count = \(debug_packetCount)")
         print("-> port match packet count = \(debug_portMatchPacketsCount)")

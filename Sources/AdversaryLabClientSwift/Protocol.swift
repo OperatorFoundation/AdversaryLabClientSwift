@@ -355,40 +355,6 @@ public struct Client
             self.lockReThink.wait()
         }
     }
-    
-    mutating func AddTrainPacketSong(transport: String, allowBlock: Bool, conn: ConnectionPackets)
-    {
-        let connID = connectionID()
-        
-        guard let EthernetPacket = conn.Incoming.ethernet else { return }
-        guard let IPpacket = conn.Incoming.ipv4 else { return }
-        guard let TCPsegment = conn.Incoming.tcp else { return }
-        
-        guard  let tcp_packet = IPpacket.payload, let payload = TCPsegment.payload else { return }
-        let rawPacket = RawPacket(
-            connection: connID,
-            ip_packet: EthernetPacket.payload,
-            tcp_packet: tcp_packet,
-            payload: payload,
-            timestamp: conn.Incoming.timestamp,
-            allow_block: allowBlock,
-            in_out: true, //true = incoming
-            handshake: true //true because add train is only called for handshake packets
-        )
-        
-        packetDatabase.append(rawPacket)
-    }
-    
-    func saveWithSong()
-    {
-        let songEncoder = SongEncoder()
-        if let encodedBytes = try? songEncoder.encode(packetDatabase)
-        {
-            let encoded = String(data: encodedBytes)
-            print("Song Encoded:")
-            print(encoded)
-        }
-    }
 }
 
 public func Connect(callback: @escaping (Client?) -> Void)
@@ -413,6 +379,5 @@ public func Connect(callback: @escaping (Client?) -> Void)
 
 public func connectionID() -> String
 {
-    let timestampMicrosecs = Date().timeIntervalSince1970
-    return timestampMicrosecs.string
+   return UUID().uuidString
 }

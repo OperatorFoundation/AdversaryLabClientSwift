@@ -149,7 +149,9 @@ struct AdversaryLabClientSwift: ParsableCommand
                         return
                     }
                     
-                    let state = startCapture(transport: self.transport, port: selectedPort, client: client, allowBlock: nil)
+                    let songClient = SongClient()
+                    
+                    let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: nil)
                     
                     
             }
@@ -189,7 +191,9 @@ struct AdversaryLabClientSwift: ParsableCommand
                     return
                 }
                 
-                let state = startCapture(transport: self.transport, port: selectedPort, client: client, allowBlock: allowBlock)
+                let songClient = SongClient()
+               
+                let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: allowBlock)
                     
             }
             dispatchMain()
@@ -199,9 +203,9 @@ struct AdversaryLabClientSwift: ParsableCommand
 
 AdversaryLabClientSwift.main()
 
-func startCapture(transport: String, port: UInt16, client: Client, allowBlock: Bool?)
+func startCapture(transport: String, port: UInt16, client: Client, songClient: SongClient, allowBlock: Bool?)
 {
-    let state = State(transport: transport, port: port, client: client)
+    let state = State(transport: transport, port: port, client: client, songClient: songClient )
     
     // Ignore default signal handling, which is killing the app
     signal(SIGINT, SIG_IGN)
