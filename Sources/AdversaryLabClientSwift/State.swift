@@ -110,7 +110,6 @@ class State
                 print("-> Error opening file")
                 return
             }
-            
             self.readPackets(source: packetSource, dest: packetChannel, port: port)
             
         default : //read from network interface
@@ -130,7 +129,7 @@ class State
         while self.recording
         {
             let bytes = source.nextPacket()
-            
+            let timestamp = source.currentHeader.ts
             
             if bytes.count == 0
             {
@@ -156,7 +155,7 @@ class State
                 //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 // printBytes(bytes)
                 
-                let thisPacket = Packet(rawBytes: Data(bytes)) //parse the packet
+                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: timestamp) //parse the packet
                 
                 if thisPacket.tcp != nil //capture tcp packet
                 {
@@ -266,7 +265,6 @@ class State
         print("-> Saving captured packets... ")
         print("recordable: \(!recordable.isEmpty)")
         var buffer: [ConnectionPackets] = []
-        var count = 0
         
         while !recordable.isEmpty
         {

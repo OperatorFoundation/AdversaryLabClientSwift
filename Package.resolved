@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/InternetProtocols.git",
         "state": {
           "branch": null,
-          "revision": "05972bcd900542c3ac4d05423bd806f7b4280638",
-          "version": "1.0.2"
+          "revision": "f44eebf761a0b053befa2fad9198702b59c28003",
+          "version": "1.0.3"
         }
       },
       {
@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/SwiftPCAP.git",
         "state": {
           "branch": null,
-          "revision": "ab2c01f8ed833acd9776c72542797e757c968a5b",
-          "version": "1.1.6"
+          "revision": "a71b86200d6344b579c83a1e9132e6441e5656e1",
+          "version": "1.1.7"
         }
       },
       {
