@@ -145,7 +145,7 @@ public struct Client
                 "ip_packet": EthernetPacket.payload.base64EncodedString(),
                 "tcp_packet": tcp_packet_bytes.base64EncodedString(),
                 "payload": payload_bytes.base64EncodedString(),
-                "timestamp": conn.Incoming.timestamp,
+                "timestamp": conn.Outgoing!.timestamp,
                 "allow_block": allowBlock,
                 "in_out": false, //true = incoming, false = outgoing
                 "handshake": true //true because add train is only called for handshake packets

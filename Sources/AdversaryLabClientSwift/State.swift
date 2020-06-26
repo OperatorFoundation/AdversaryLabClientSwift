@@ -155,11 +155,10 @@ class State
                 //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 // printBytes(bytes)
                 
-                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: timestamp) //parse the packet
+                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: timestamp, debugPrints: true) //parse the packet
                 
                 if thisPacket.tcp != nil //capture tcp packet
                 {
-                
                     capturePort(thisPacket, port)
                 }
             }
