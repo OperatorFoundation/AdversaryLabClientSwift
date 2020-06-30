@@ -17,7 +17,7 @@ public struct SongClient
     
     mutating func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
     {
-        guard var sequence = db.readSequence(type: RawPacket.self, at: URL(fileURLWithPath: transport)) else
+        guard var sequence = db.createOrReadSequence(elementType: RawPacket.self, at: URL(fileURLWithPath: transport)) else
         {
             return
         }
@@ -45,11 +45,11 @@ public struct SongClient
     
     mutating func AddTrainPacket(transport: String, allowBlock: Bool, conn: ConnectionPackets)
     {
-        guard var sequence = db.readSequence(type: RawPacket.self, at: URL(fileURLWithPath: transport)) else
+        guard var sequence = db.createOrReadSequence(elementType: RawPacket.self, at: URL(fileURLWithPath: transport)) else
         {
             return
         }
-        
+
         if let incoming = makePacket(input: conn.Incoming, allowBlock: allowBlock, inOut: true, handshake: true)
         {
             sequence.append(incoming)

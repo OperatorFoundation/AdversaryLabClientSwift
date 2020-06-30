@@ -125,7 +125,6 @@ struct AdversaryLabClientSwift: ParsableCommand
                 throw ValidationError("pcap file not found! use full path to file. Use --help for more info.")
             }
         }
-        
     }
     
     func run() throws
@@ -140,21 +139,20 @@ struct AdversaryLabClientSwift: ParsableCommand
         {
             print("buffering mode - user to classify packets at end of capture")
             Connect
+            {
+                maybeClient in
+                
+                guard let client = maybeClient else
                 {
-                    maybeClient in
-                    
-                    guard let client = maybeClient else
-                    {
-                        print("Could not connect to RethinkDB")
-                        return
-                    }
-                    
-                    let songClient = SongClient()
-                    
-                    let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: nil)
-                    
-                    
+                    print("Could not connect to RethinkDB")
+                    return
+                }
+                
+                let songClient = SongClient()
+                
+                let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: nil)
             }
+            
             dispatchMain()
         }
         else
@@ -196,6 +194,7 @@ struct AdversaryLabClientSwift: ParsableCommand
                 let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: allowBlock)
                     
             }
+            
             dispatchMain()
         }
     }
@@ -212,20 +211,21 @@ func startCapture(transport: String, port: UInt16, client: Client, songClient: S
     
     let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
     source.setEventHandler
+    {
+        print("event handler happened")
+        
+        // Restore default signal handling, which means killing the app
+        signal(SIGINT, SIG_DFL)
+        
+        state.recording = false
+        if state.allowBlockChannel.isEmpty
         {
-            print("event handler happened")
-            
-            // Restore default signal handling, which means killing the app
-            signal(SIGINT, SIG_DFL)
-            
-            state.recording = false
-            if state.allowBlockChannel.isEmpty
-            {
-                state.allowBlockChannel.enqueue(true)
-            }
-            state.saveCaptured()
-            exit(0)
+            state.allowBlockChannel.enqueue(true)
+        }
+        state.saveCaptured()
+        exit(0)
     }
+    
     source.resume()
     
     if allowBlock == nil
@@ -234,8 +234,8 @@ func startCapture(transport: String, port: UInt16, client: Client, songClient: S
         // The user has not yet indicated which category this data belongs to.
         // Buffer the data until the user enters 'allowed' or 'blocked'.
         state.queue.async
-            {
-                state.listenForDataCategory()
+        {
+            state.listenForDataCategory()
         }
     }
     else
