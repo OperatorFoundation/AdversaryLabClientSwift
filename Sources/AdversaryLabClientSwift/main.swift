@@ -112,10 +112,15 @@ struct AdversaryLabClientSwift: ParsableCommand
             {
                 //fix, is this the best way to test for a vaid pcap file? Is checking for magic bytes better? https://wiki.wireshark.org/Development/LibpcapFileFormat
                 //fix, will the memory for packetSource be released, doesn't seem to be a function of SwiftPCAP to release memory or close the capture
-                guard let packetSource = try? SwiftPCAP.Offline(path: pcapFilePath) else
+                do
+                {
+                    let _ = try SwiftPCAP.Offline(path: pcapFilePath)
+                }
+                catch
                 {
                     throw ValidationError("error opening pcap file, file seems to be invalid. Use --help for more info.")
                 }
+                
                 print("valid pcap file exists!")
                 sourceReadFromFile = true
                 validPCAPfile = pcapFilePath
@@ -138,20 +143,9 @@ struct AdversaryLabClientSwift: ParsableCommand
         if allowOrBlock == nil
         {
             print("buffering mode - user to classify packets at end of capture")
-            Connect
-            {
-                maybeClient in
-                
-                guard let client = maybeClient else
-                {
-                    print("Could not connect to RethinkDB")
-                    return
-                }
-                
-                let songClient = SongClient()
-                
-                let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: nil)
-            }
+            let songClient = SongClient()
+            
+            startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: nil)
             
             dispatchMain()
         }
@@ -179,21 +173,9 @@ struct AdversaryLabClientSwift: ParsableCommand
             guard let ab = self.allowOrBlock else { return }
             print("streaming mode - packets will be classified as \(ab)ed")
             
-            Connect
-            {
-                maybeClient in
-                
-                guard let client = maybeClient else
-                {
-                    print("Could not connect to RethinkDB")
-                    return
-                }
-                
-                let songClient = SongClient()
-               
-                let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: allowBlock)
-                    
-            }
+            let songClient = SongClient()
+           
+            startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: allowBlock)
             
             dispatchMain()
         }
@@ -202,9 +184,9 @@ struct AdversaryLabClientSwift: ParsableCommand
 
 AdversaryLabClientSwift.main()
 
-func startCapture(transport: String, port: UInt16, client: Client, songClient: SongClient, allowBlock: Bool?)
+func startCapture(transport: String, port: UInt16, songClient: SongClient, allowBlock: Bool?)
 {
-    let state = State(transport: transport, port: port, client: client, songClient: songClient )
+    let state = State(transport: transport, port: port, songClient: songClient)
     
     // Ignore default signal handling, which is killing the app
     signal(SIGINT, SIG_IGN)
