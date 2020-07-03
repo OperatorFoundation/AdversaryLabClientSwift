@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/Song.git",
         "state": {
           "branch": null,
-          "revision": "bd0f9caf444934a0f3a61d4abbd9b809f379c58a",
-          "version": "0.0.16"
+          "revision": "f004b968df1246a17f1ee94ac8a9b88beda871c7",
+          "version": "0.0.17"
         }
       },
       {
@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/SwiftPCAP.git",
         "state": {
           "branch": null,
-          "revision": "a71b86200d6344b579c83a1e9132e6441e5656e1",
-          "version": "1.1.7"
+          "revision": "4ac0911d2f3d5611baa9c8a4ba56e4841c90ebb4",
+          "version": "1.1.8"
         }
       },
       {
