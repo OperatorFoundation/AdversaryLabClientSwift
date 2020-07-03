@@ -8,8 +8,6 @@ import InternetProtocols
 var validPCAPfile: String = ""
 var sourceReadFromFile: Bool = false //false = read from interface (default), true = read from file
 
-import Rethink
-
 struct Connection: Hashable
 {
     let small: UInt16
