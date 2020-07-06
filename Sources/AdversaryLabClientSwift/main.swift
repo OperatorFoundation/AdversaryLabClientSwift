@@ -61,8 +61,6 @@ struct AdversaryLabClientSwift: ParsableCommand
      [--protocol ?PROTOCOL??? ] //only include PROTOCOL
      */
     
-    //fix, how to tell user that --help or -h prints full usage info and help on the command
-    
     static var configuration = CommandConfiguration(
         abstract: "Packet capture for Adversary Lab.",
         discussion: """
@@ -83,11 +81,6 @@ struct AdversaryLabClientSwift: ParsableCommand
     
     func validate() throws
     {
-//        guard self.transport == "HTTP" || self.transport == "HTTPS" else
-//        {
-//            throw ValidationError("'<transport>' must be either 'HTTP' or 'HTTPS'. Use --help for more info.")
-//        }
-        
         guard self.port > 0 && self.port <= 65535 else
         {
             throw ValidationError("'<port>' must be between 1 and 65535. Use --help for more info.")
@@ -133,6 +126,7 @@ struct AdversaryLabClientSwift: ParsableCommand
     func run() throws
     {
         print("Delaying 1 second to allow debugger to attach to process...")
+        print("tip: use --help or -h prints full usage info and help")
         sleep(1)
         print("-> Adversary Lab Client is running...Now in Swift!")
         
@@ -229,9 +223,7 @@ func startCapture(transport: String, port: UInt16, songClient: SongClient, allow
         state.maybeAllowBlock = allowBlock
     }
     
-    print("pre state.capture")
     state.capture()
-    print("post state.capture")
 }
 
 func usage()
