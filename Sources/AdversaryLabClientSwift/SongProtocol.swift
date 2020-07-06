@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Rethink
 import Dispatch
 import Symphony
 import InternetProtocols

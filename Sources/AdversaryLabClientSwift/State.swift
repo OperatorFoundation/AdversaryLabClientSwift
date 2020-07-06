@@ -16,6 +16,32 @@ import InternetProtocols
     import Glibc
 #endif
 
+let packetsKey: String = "Packets"
+
+public struct RawPacket: Codable
+{
+    let connection: String
+    let ip_packet: Data
+    let tcp_packet: Data
+    let payload: Data
+    let timestamp: Int
+    let allow_block: Bool
+    let in_out: Bool
+    let handshake: Bool
+}
+
+public struct ConnectionPackets: Codable
+{ //first incoming/outgoing relative to server
+    var Incoming: Packet
+    var Outgoing: Packet?
+}
+
+public struct RawConnectionPackets: Codable
+{ //all packets
+    var Incoming: [Packet] = []
+    var Outgoing: [Packet] = []
+}
+
 class State
 {
     var maybeAllowBlock: Bool? = nil
@@ -24,7 +50,7 @@ class State
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
     let packetChannel: Queue<Packet> = Queue<Packet>()
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
-    let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
+    let queue: DispatchQueue = DispatchQueue(label: "AdversaryLab")
     var debug_packetCount = 0
     var debug_portMatchPacketsCount = 0
     var debug_payloadPacketsCount = 0
@@ -32,19 +58,18 @@ class State
     var debug_recordedCompletePacketsCount = 0
     var debug_addTrainPacketCount = 0
     var debug_savedIncompletePacketCount = 0
-    var lab: Client
     var songLab: SongClient
     let transport: String
     let port: UInt16
     var recording: Bool
+    let signalQueue = DispatchQueue(label: "signal")
     
-    init(transport: String, port: UInt16, client: Client, songClient: SongClient)
+    init(transport: String, port: UInt16, songClient: SongClient)
     {
         self.transport = transport
         self.port = port
-        self.lab = client
-        self.recording = true
         songLab = songClient
+        self.recording = true
         
     }    
     
@@ -137,14 +162,9 @@ class State
                 
                 if sourceReadFromFile //reading from file and have reached the end of file
                 {
-                    //fix, is this the correct way to end reading and record to DB?
                     print("\n\nEnd of PCAP file reached.\n")
-                    #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-                        _ = Darwin.raise(SIGINT)
-                    #elseif os(Linux)
-                        _ = Glibc.raise(SIGINT)
-                    #endif
-                    
+                    finishCapture()
+                    return
                 }
                 
                 sleep(1) //wait for a packet
@@ -155,7 +175,7 @@ class State
                 //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 // printBytes(bytes)
                 
-                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: timestamp, debugPrints: true) //parse the packet
+                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: timestamp, debugPrints: false) //parse the packet
                 
                 if thisPacket.tcp != nil //capture tcp packet
                 {
@@ -276,14 +296,7 @@ class State
             
             if let allowBlock = maybeAllowBlock
             {
-                print("-> **")
-                guard let allowBlock = maybeAllowBlock else
-                {
-                    print("-")
-                    return
-                }
                 print("-> *")
-                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
                 songLab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connPackets)
                 debug_addTrainPacketCount += 1
             }
@@ -318,7 +331,6 @@ class State
             for (index, packet) in buffer.enumerated()
             {
                 print("-> Saving complete connections. (\(index+1)/\(buffer.count)) --<-@")
-                lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
                 songLab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: packet)
                 debug_addTrainPacketCount += 1
             }
@@ -329,8 +341,6 @@ class State
             for (index, rawConnection) in rawCaptured.enumerated()
             {
                 print("-> Saving complete raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
-                var last: Bool = false
-                lab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
                 songLab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
             }
         }
@@ -347,7 +357,7 @@ class State
             print("-> Captured count is ", captured.count)
             if captured.count > 0
             {
-                for (index, (_, connection)) in captured.enumerated()
+                for (_, (_, connection)) in captured.enumerated()
                 {
                     //print("Entering loop for saving incomplete connections. (\(index+1)/\(captured.count))")
                     // If this connection in the map is incomplete (only the incoming packet was captured) save it
@@ -356,7 +366,6 @@ class State
                     if connection.Outgoing == nil
                     {
                         print("-> Saving incomplete connection.  --<-@")
-                        lab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
                         songLab.AddTrainPacket(transport: transport, allowBlock: allowBlock, conn: connection)
                         debug_addTrainPacketCount += 1
                         debug_savedIncompletePacketCount += 1
@@ -376,5 +385,15 @@ class State
         print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
         print("--> We are done saving things to the database. Bye now!\n")
         exit(1)
+    }
+    
+    func finishCapture()
+    {
+        self.recording = false
+        if self.allowBlockChannel.isEmpty
+        {
+            self.allowBlockChannel.enqueue(true)
+        }
+        self.saveCaptured()
     }
 }

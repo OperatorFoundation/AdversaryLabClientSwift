@@ -8,8 +8,6 @@ import InternetProtocols
 var validPCAPfile: String = ""
 var sourceReadFromFile: Bool = false //false = read from interface (default), true = read from file
 
-import Rethink
-
 struct Connection: Hashable
 {
     let small: UInt16
@@ -63,8 +61,6 @@ struct AdversaryLabClientSwift: ParsableCommand
      [--protocol ?PROTOCOL??? ] //only include PROTOCOL
      */
     
-    //fix, how to tell user that --help or -h prints full usage info and help on the command
-    
     static var configuration = CommandConfiguration(
         abstract: "Packet capture for Adversary Lab.",
         discussion: """
@@ -85,11 +81,6 @@ struct AdversaryLabClientSwift: ParsableCommand
     
     func validate() throws
     {
-//        guard self.transport == "HTTP" || self.transport == "HTTPS" else
-//        {
-//            throw ValidationError("'<transport>' must be either 'HTTP' or 'HTTPS'. Use --help for more info.")
-//        }
-        
         guard self.port > 0 && self.port <= 65535 else
         {
             throw ValidationError("'<port>' must be between 1 and 65535. Use --help for more info.")
@@ -112,10 +103,15 @@ struct AdversaryLabClientSwift: ParsableCommand
             {
                 //fix, is this the best way to test for a vaid pcap file? Is checking for magic bytes better? https://wiki.wireshark.org/Development/LibpcapFileFormat
                 //fix, will the memory for packetSource be released, doesn't seem to be a function of SwiftPCAP to release memory or close the capture
-                guard let packetSource = try? SwiftPCAP.Offline(path: pcapFilePath) else
+                do
+                {
+                    let _ = try SwiftPCAP.Offline(path: pcapFilePath)
+                }
+                catch
                 {
                     throw ValidationError("error opening pcap file, file seems to be invalid. Use --help for more info.")
                 }
+                
                 print("valid pcap file exists!")
                 sourceReadFromFile = true
                 validPCAPfile = pcapFilePath
@@ -130,6 +126,7 @@ struct AdversaryLabClientSwift: ParsableCommand
     func run() throws
     {
         print("Delaying 1 second to allow debugger to attach to process...")
+        print("tip: use --help or -h to print detailed usage info and help")
         sleep(1)
         print("-> Adversary Lab Client is running...Now in Swift!")
         
@@ -138,21 +135,13 @@ struct AdversaryLabClientSwift: ParsableCommand
         if allowOrBlock == nil
         {
             print("buffering mode - user to classify packets at end of capture")
-            Connect
-            {
-                maybeClient in
-                
-                guard let client = maybeClient else
-                {
-                    print("Could not connect to RethinkDB")
-                    return
-                }
-                
-                let songClient = SongClient()
-                
-                let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: nil)
-            }
+            let songClient = SongClient()
             
+            DispatchQueue.main.async
+            {
+                startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: nil)
+            }
+
             dispatchMain()
         }
         else
@@ -179,20 +168,11 @@ struct AdversaryLabClientSwift: ParsableCommand
             guard let ab = self.allowOrBlock else { return }
             print("streaming mode - packets will be classified as \(ab)ed")
             
-            Connect
+            let songClient = SongClient()
+           
+            DispatchQueue.main.async
             {
-                maybeClient in
-                
-                guard let client = maybeClient else
-                {
-                    print("Could not connect to RethinkDB")
-                    return
-                }
-                
-                let songClient = SongClient()
-               
-                let state = startCapture(transport: self.transport, port: selectedPort, client: client, songClient: songClient, allowBlock: allowBlock)
-                    
+                startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: allowBlock)
             }
             
             dispatchMain()
@@ -202,14 +182,14 @@ struct AdversaryLabClientSwift: ParsableCommand
 
 AdversaryLabClientSwift.main()
 
-func startCapture(transport: String, port: UInt16, client: Client, songClient: SongClient, allowBlock: Bool?)
+func startCapture(transport: String, port: UInt16, songClient: SongClient, allowBlock: Bool?)
 {
-    let state = State(transport: transport, port: port, client: client, songClient: songClient )
+    let state = State(transport: transport, port: port, songClient: songClient)
     
     // Ignore default signal handling, which is killing the app
     signal(SIGINT, SIG_IGN)
     
-    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: state.signalQueue)
     source.setEventHandler
     {
         print("event handler happened")
@@ -243,9 +223,7 @@ func startCapture(transport: String, port: UInt16, client: Client, songClient: S
         state.maybeAllowBlock = allowBlock
     }
     
-    
     state.capture()
-    
 }
 
 func usage()

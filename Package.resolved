@@ -29,21 +29,12 @@
         }
       },
       {
-        "package": "Rethink",
-        "repositoryURL": "https://github.com/OperatorFoundation/rethink-swift.git",
-        "state": {
-          "branch": null,
-          "revision": "f8a2e7c7aa424066b8cc8b4aedd73edf180ef3d8",
-          "version": "1.1.0"
-        }
-      },
-      {
         "package": "Song",
         "repositoryURL": "https://github.com/OperatorFoundation/Song.git",
         "state": {
           "branch": null,
-          "revision": "f004b968df1246a17f1ee94ac8a9b88beda871c7",
-          "version": "0.0.17"
+          "revision": "70b719bbac16b68d107d5fe8ce2352a9d4e623ab",
+          "version": "0.0.19"
         }
       },
       {
