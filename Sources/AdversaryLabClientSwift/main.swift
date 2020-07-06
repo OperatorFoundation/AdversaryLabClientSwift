@@ -126,7 +126,7 @@ struct AdversaryLabClientSwift: ParsableCommand
     func run() throws
     {
         print("Delaying 1 second to allow debugger to attach to process...")
-        print("tip: use --help or -h prints full usage info and help")
+        print("tip: use --help or -h to print detailed usage info and help")
         sleep(1)
         print("-> Adversary Lab Client is running...Now in Swift!")
         
