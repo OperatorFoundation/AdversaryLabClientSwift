@@ -143,8 +143,10 @@ struct AdversaryLabClientSwift: ParsableCommand
             print("buffering mode - user to classify packets at end of capture")
             let songClient = SongClient()
             
-            startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: nil)
-            
+            DispatchQueue.main.async {
+                startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: nil)
+            }
+
             dispatchMain()
         }
         else
@@ -173,7 +175,9 @@ struct AdversaryLabClientSwift: ParsableCommand
             
             let songClient = SongClient()
            
-            startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: allowBlock)
+            DispatchQueue.main.async {
+                startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: allowBlock)
+            }
             
             dispatchMain()
         }
@@ -223,9 +227,9 @@ func startCapture(transport: String, port: UInt16, songClient: SongClient, allow
         state.maybeAllowBlock = allowBlock
     }
     
-    
+    print("pre state.capture")
     state.capture()
-    
+    print("post state.capture")
 }
 
 func usage()
