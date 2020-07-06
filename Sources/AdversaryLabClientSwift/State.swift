@@ -50,7 +50,7 @@ class State
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
     let packetChannel: Queue<Packet> = Queue<Packet>()
     let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
-    let queue: DispatchQueue = DispatchQueue.init(label: "AdversaryLab")
+    let queue: DispatchQueue = DispatchQueue(label: "AdversaryLab")
     var debug_packetCount = 0
     var debug_portMatchPacketsCount = 0
     var debug_payloadPacketsCount = 0
@@ -62,6 +62,7 @@ class State
     let transport: String
     let port: UInt16
     var recording: Bool
+    let signalQueue = DispatchQueue(label: "signal")
     
     init(transport: String, port: UInt16, songClient: SongClient)
     {

@@ -143,7 +143,8 @@ struct AdversaryLabClientSwift: ParsableCommand
             print("buffering mode - user to classify packets at end of capture")
             let songClient = SongClient()
             
-            DispatchQueue.main.async {
+            DispatchQueue.main.async
+            {
                 startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: nil)
             }
 
@@ -175,7 +176,8 @@ struct AdversaryLabClientSwift: ParsableCommand
             
             let songClient = SongClient()
            
-            DispatchQueue.main.async {
+            DispatchQueue.main.async
+            {
                 startCapture(transport: self.transport, port: selectedPort, songClient: songClient, allowBlock: allowBlock)
             }
             
@@ -193,7 +195,7 @@ func startCapture(transport: String, port: UInt16, songClient: SongClient, allow
     // Ignore default signal handling, which is killing the app
     signal(SIGINT, SIG_IGN)
     
-    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: state.signalQueue)
     source.setEventHandler
     {
         print("event handler happened")
