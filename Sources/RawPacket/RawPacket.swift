@@ -9,14 +9,14 @@ import Foundation
 
 public struct RawPacket: Codable
 {
-    let connection: String
-    let ip_packet: Data
-    let tcp_packet: Data
-    let payload: Data
-    let timestamp: Int
-    let allow_block: Bool
-    let in_out: Bool
-    let handshake: Bool
+    public let connection: String
+    public let ip_packet: Data
+    public let tcp_packet: Data
+    public let payload: Data
+    public let timestamp: Int
+    public let allow_block: Bool
+    public let in_out: Bool
+    public let handshake: Bool
     
     public init(connection: String, ip_packet: Data, tcp_packet: Data, payload: Data, timestamp: Int, allow_block: Bool, in_out: Bool, handshake: Bool)
     {
