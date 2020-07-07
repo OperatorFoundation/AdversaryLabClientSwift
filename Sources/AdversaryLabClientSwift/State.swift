@@ -18,18 +18,6 @@ import InternetProtocols
 
 let packetsKey: String = "Packets"
 
-public struct RawPacket: Codable
-{
-    let connection: String
-    let ip_packet: Data
-    let tcp_packet: Data
-    let payload: Data
-    let timestamp: Int
-    let allow_block: Bool
-    let in_out: Bool
-    let handshake: Bool
-}
-
 public struct ConnectionPackets: Codable
 { //first incoming/outgoing relative to server
     var Incoming: Packet

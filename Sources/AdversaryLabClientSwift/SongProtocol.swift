@@ -9,6 +9,7 @@ import Foundation
 import Dispatch
 import Symphony
 import InternetProtocols
+import RawPacket
 
 public struct SongClient
 {
@@ -72,6 +73,7 @@ public struct SongClient
         guard let TCPsegment = input.tcp else { return nil }
         
         guard  let tcp_packet = IPpacket.payload, let payload = TCPsegment.payload else { return nil }
+        
         return RawPacket(
             connection: connID,
             ip_packet: EthernetPacket.payload,

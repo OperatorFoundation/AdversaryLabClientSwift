@@ -7,7 +7,8 @@ let package = Package(
     products: [
         .executable(
             name: "AdversaryLabClientSwift",
-            targets: ["AdversaryLabClientSwift"])
+            targets: ["AdversaryLabClientSwift"]),
+        .library(name: "RawPacket", targets: ["RawPacket"])
     ],
     dependencies: [
         .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", from: "0.0.3"),
@@ -21,7 +22,8 @@ let package = Package(
     targets: [
         .target(
             name: "AdversaryLabClientSwift",
-            dependencies: ["SwiftPCAP", "SwiftQueue", .product(name: "Symphony", package: "Song"), .product(name: "ArgumentParser", package: "swift-argument-parser"), "Bits", "InternetProtocols", "Datable"]),
+            dependencies: ["SwiftPCAP", "SwiftQueue", "RawPacket", .product(name: "Symphony", package: "Song"), .product(name: "ArgumentParser", package: "swift-argument-parser"), "Bits", "InternetProtocols", "Datable"]),
+        .target(name: "RawPacket"),
         .testTarget(
             name: "AdversaryLabClientSwiftTests",
             dependencies: ["AdversaryLabClientSwift"]),
