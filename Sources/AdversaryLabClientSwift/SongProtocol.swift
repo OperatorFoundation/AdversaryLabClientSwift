@@ -22,9 +22,11 @@ public struct SongClient
             return
         }
         
+        let connID = connectionUUID()
+        
         for incomingInput in conn.Incoming
         {
-            guard let incoming = makePacket(input: incomingInput, allowBlock: allowBlock, inOut: true, handshake: false) else
+            guard let incoming = makePacket(input: incomingInput, allowBlock: allowBlock, inOut: true, handshake: false, connID: connID) else
             {
                 continue
             }
@@ -34,7 +36,7 @@ public struct SongClient
         
         for outgoingInput in conn.Outgoing
         {
-            guard let outgoing = makePacket(input: outgoingInput, allowBlock: allowBlock, inOut: false, handshake: false) else
+            guard let outgoing = makePacket(input: outgoingInput, allowBlock: allowBlock, inOut: false, handshake: false, connID: connID) else
             {
                 continue
             }
@@ -50,24 +52,24 @@ public struct SongClient
             return
         }
 
-        if let incoming = makePacket(input: conn.Incoming, allowBlock: allowBlock, inOut: true, handshake: true)
+        let connID = connectionUUID()
+        
+        if let incoming = makePacket(input: conn.Incoming, allowBlock: allowBlock, inOut: true, handshake: true, connID: connID)
         {
             sequence.append(incoming)
         }
         
         if let outgoingInput = conn.Outgoing
         {
-            if let outgoing = makePacket(input: outgoingInput, allowBlock: allowBlock, inOut: false, handshake: true)
+            if let outgoing = makePacket(input: outgoingInput, allowBlock: allowBlock, inOut: false, handshake: true, connID: connID)
             {
                 sequence.append(outgoing)
             }
         }
     }
     
-    func makePacket(input: Packet, allowBlock: Bool, inOut: Bool, handshake: Bool) -> RawPacket?
+    func makePacket(input: Packet, allowBlock: Bool, inOut: Bool, handshake: Bool, connID: String) -> RawPacket?
     {
-        let connID = connectionUUID()
-        
         guard let EthernetPacket = input.ethernet else { return nil }
         guard let IPpacket = input.ipv4 else { return nil }
         guard let TCPsegment = input.tcp else { return nil }
