@@ -67,7 +67,7 @@ struct AdversaryLabClientSwift: ParsableCommand
             Adversary Lab Client captures packets meeting certain critera specified by the user and classifies the traffic as allowed or blocked for use in Adversary Lab. \nAdversary Lab is a service that analyzes captured network traffic to extract statistical properties. Using this analysis, filtering rules can be synthesized to block sampled traffic. The purpose of this service is to help application developers create applications which are more resistant to network filtering attacks. https://OperatorFoundation.org/
             """)
     
-    @Argument(help: "The transport to capture. examples: HTTP, HTTPS, FTP, etc.") //fix with better examples
+    @Argument(help: "The transport to capture. examples: HTTP, HTTPS, FTP, etc.") 
     var transport: String
     
     @Argument(help: "The port to capture, valid range between 1 and 65535. examples: 80, 443, 21, etc") //fix with better examples

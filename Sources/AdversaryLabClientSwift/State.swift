@@ -9,6 +9,7 @@ import Foundation
 import SwiftQueue
 import SwiftPCAP
 import InternetProtocols
+import ZIPFoundation
 
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
     import Darwin
@@ -383,7 +384,37 @@ class State
         print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
         print("-> add train packet count = \(debug_addTrainPacketCount)")
         print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
-        print("--> We are done saving things to the database. Bye now!\n")
+        print("--> We are done saving things to the database.")
+        print("--> zipping adversary_data")
+        
+        let fileManager = FileManager()
+        
+        var sourceURL = URL(fileURLWithPath: "adversary_data")
+        
+        var destinationURL = URL(fileURLWithPath: "adversary_data.zip")
+        
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            do
+            {
+                try fileManager.removeItem(atPath: destinationURL.path)
+            }
+            catch let error as NSError
+            {
+                print("Couldn't delete existing zip archive of adversary_data: \(error)")
+            }
+        }
+        
+        do
+        {
+            try fileManager.zipItem(at: sourceURL, to: destinationURL, compressionMethod: .deflate)
+        }
+        catch
+        {
+            print("Creation of adversary_data zip archive failed with error:\(error)")
+        }
+        print("--> We are done zipping the database. Bye Now!\n")
+        
+        
         exit(1)
     }
     

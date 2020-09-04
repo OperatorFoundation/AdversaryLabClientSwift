@@ -17,11 +17,12 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1"),
         .package(url: "https://github.com/OperatorFoundation/Bits.git", from: "1.0.3"),
         .package(url: "https://github.com/OperatorFoundation/InternetProtocols.git", from: "1.0.1"),
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.11")
     ],
     targets: [
         .target(
             name: "AdversaryLabClientSwift",
-            dependencies: ["SwiftPCAP", "SwiftQueue", .product(name: "Symphony", package: "Song"), .product(name: "ArgumentParser", package: "swift-argument-parser"), "Bits", "InternetProtocols", "Datable"]),
+            dependencies: ["SwiftPCAP", "SwiftQueue", .product(name: "Symphony", package: "Song"), .product(name: "ArgumentParser", package: "swift-argument-parser"), "Bits", "InternetProtocols", "Datable", "ZIPFoundation"]),
         .testTarget(
             name: "AdversaryLabClientSwiftTests",
             dependencies: ["AdversaryLabClientSwift"]),
