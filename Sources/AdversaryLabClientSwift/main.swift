@@ -52,7 +52,7 @@ struct AdversaryLabClientSwift: ParsableCommand
      Future:
      Example of Flags version
      <--interface INTERFACE_NAME > //read packets from a live interface eg eth0, en0, etc
-     <--transport, -t TRANSPORT >  //only include TRANSPORT packets
+     <--transport, -t TRANSPORT >  //name of transport captured
      <--port PORT_NUMBER >           //only include packets on PORT_NUMBER
      [--read-file -r FILE_PATH]   //read packets from a pcap file, if this is specified then interface option is ignored
      [--list-interfaces] //list available interfaces, all other options are ignored. can SCNetworkConfiguration be used?
@@ -67,7 +67,7 @@ struct AdversaryLabClientSwift: ParsableCommand
             Adversary Lab Client captures packets meeting certain critera specified by the user and classifies the traffic as allowed or blocked for use in Adversary Lab. \nAdversary Lab is a service that analyzes captured network traffic to extract statistical properties. Using this analysis, filtering rules can be synthesized to block sampled traffic. The purpose of this service is to help application developers create applications which are more resistant to network filtering attacks. https://OperatorFoundation.org/
             """)
     
-    @Argument(help: "The transport to capture. examples: HTTP, HTTPS, FTP, etc.") //fix with better examples
+    @Argument(help: "The transport to capture. examples: HTTP, HTTPS, FTP, etc. This is just a name for the captured transport.")
     var transport: String
     
     @Argument(help: "The port to capture, valid range between 1 and 65535. examples: 80, 443, 21, etc") //fix with better examples
