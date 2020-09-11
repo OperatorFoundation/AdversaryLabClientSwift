@@ -11,6 +11,8 @@ import SwiftPCAP
 import InternetProtocols
 import ZIPFoundation
 
+
+
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
     import Darwin
 #elseif os(Linux)
@@ -372,6 +374,8 @@ class State
         print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
         print("--> We are done saving things to the database.")
         
+        setbuf(__stdoutp, nil);
+        
         var progress = Progress()
         let observer = ZIPProgressObserver(object: progress)
         
@@ -393,14 +397,14 @@ class State
         do
         {
             print("-> Zipping adversary_data ......")
-            print("[                    ]")
+            print("[                    ]", terminator: "")
             try fileManager.zipItem(at: sourceURL, to: destinationURL, compressionMethod: .deflate, progress: progress)
         }
         catch
         {
             print("Creation of adversary_data zip archive failed with error:\(error)")
         }
-        print("--> We are done zipping the database. Bye Now!\n")
+        print("\n--> We are done zipping the database. Bye Now!\n")
         
         exit(1)
     }
@@ -450,7 +454,8 @@ class ZIPProgressObserver: NSObject {
                 }
                 //print("a", terminator: "\n")
                 progressString += "]"
-                print(progressString) //FIXME: don't print a new line each time, should overwrite previous. why does \r not return to start of line?
+               
+                print( "\r" + progressString, terminator: "") 
                 
             }
             
