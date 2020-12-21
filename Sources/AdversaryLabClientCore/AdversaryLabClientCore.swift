@@ -1,12 +1,11 @@
 //
-//  File.swift
+//  AdversaryLabClientCore.swift
 //  
 //
 //  Created by Dr. Brandon Wiley on 12/21/20.
 //
 
 import Foundation
-import SwiftPCAP
 import InternetProtocols
 
 var validPCAPfile: String = ""
