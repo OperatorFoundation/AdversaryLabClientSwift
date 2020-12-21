@@ -5,9 +5,8 @@ let package = Package(
     name: "AdversaryLabClientSwift",
     platforms: [.macOS(.v10_15)],
     products: [
-        .executable(
-            name: "AdversaryLabClientSwift",
-            targets: ["AdversaryLabClientSwift"]),
+        .executable(name: "AdversaryLabClient", targets: ["AdversaryLabClient"]),
+        .library(name: "AdversaryLabClientCore", targets: ["AdversaryLabClientCore"]),
         .library(name: "RawPacket", targets: ["RawPacket"])
     ],
     dependencies: [
@@ -22,11 +21,12 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "AdversaryLabClientSwift",
-            dependencies: ["SwiftPCAP", "SwiftQueue", "RawPacket", .product(name: "Symphony", package: "Song"), .product(name: "ArgumentParser", package: "swift-argument-parser"), "Bits", "InternetProtocols", "Datable", "ZIPFoundation"]),
+            name: "AdversaryLabClient",
+            dependencies: ["AdversaryLabClientCore", "SwiftPCAP", .product(name: "ArgumentParser", package: "swift-argument-parser")]),
+        .target(name: "AdversaryLabClientCore", dependencies: ["SwiftQueue", "RawPacket", .product(name: "Symphony", package: "Song"), "Bits", "InternetProtocols", "Datable", "ZIPFoundation"]),
         .target(name: "RawPacket"),
         .testTarget(
-            name: "AdversaryLabClientSwiftTests",
-            dependencies: ["AdversaryLabClientSwift"]),
+            name: "AdversaryLabClientCoreTests",
+            dependencies: ["AdversaryLabClientCore"]),
     ]
 )

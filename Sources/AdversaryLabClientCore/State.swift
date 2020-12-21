@@ -11,8 +11,6 @@ import SwiftPCAP
 import InternetProtocols
 import ZIPFoundation
 
-
-
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
     import Darwin
 #elseif os(Linux)
@@ -376,8 +374,8 @@ class State
         
         setbuf(__stdoutp, nil);
         
-        var progress = Progress()
-        let observer = ZIPProgressObserver(object: progress)
+        let progress = Progress()
+        let _ = ZIPProgressObserver(object: progress)
         
         let fileManager = FileManager()
         let sourceURL = URL(fileURLWithPath: "adversary_data")

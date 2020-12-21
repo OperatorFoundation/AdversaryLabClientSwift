@@ -1,7 +1,7 @@
 import XCTest
 
-import AdversaryLabClientSwiftTests
+import AdversaryLabClientCoreTests
 
 var tests = [XCTestCaseEntry]()
-tests += AdversaryLabClientSwiftTests.allTests()
+tests += AdversaryLabClientCoreTests.allTests()
 XCTMain(tests)
