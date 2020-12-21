@@ -23,7 +23,7 @@ let package = Package(
         .target(
             name: "AdversaryLabClient",
             dependencies: ["AdversaryLabClientCore", "SwiftPCAP", .product(name: "ArgumentParser", package: "swift-argument-parser")]),
-        .target(name: "AdversaryLabClientCore", dependencies: ["SwiftQueue", "RawPacket", .product(name: "Symphony", package: "Song"), "Bits", "InternetProtocols", "Datable", "ZIPFoundation"]),
+        .target(name: "AdversaryLabClientCore", dependencies: ["SwiftPCAP", "SwiftQueue", "RawPacket", .product(name: "Symphony", package: "Song"), "Bits", "InternetProtocols", "Datable", "ZIPFoundation"]),
         .target(name: "RawPacket"),
         .testTarget(
             name: "AdversaryLabClientCoreTests",
