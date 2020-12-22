@@ -144,7 +144,12 @@ class State
         {
             let bytes = source.nextPacket()
             let timestamp = source.currentHeader.ts
+            let seconds = UInt64(timestamp.tv_sec) //convert seconds to microsecs
+            let microSecs = UInt64(timestamp.tv_usec)
+            let totalMicroSecs = seconds * UInt64(1e6) + microSecs
+            let totalSeconds = totalMicroSecs / 1000000
             
+            let date = Date(timeIntervalSince1970: TimeInterval(totalSeconds))
             if bytes.count == 0
             {
                 //print("\n_", terminator: "\n")
@@ -164,7 +169,7 @@ class State
                 //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 // printBytes(bytes)
                 
-                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: timestamp, debugPrints: false) //parse the packet
+                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: date, debugPrints: false) //parse the packet
                 
                 if thisPacket.tcp != nil //capture tcp packet
                 {
