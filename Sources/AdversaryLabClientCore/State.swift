@@ -7,9 +7,15 @@
 
 import Foundation
 import SwiftQueue
-import SwiftPCAP
 import InternetProtocols
 import ZIPFoundation
+import PacketStream
+
+#if os(Linux)
+import PacketCaptureLibpcap
+#else
+import PacketCaptureBPF
+#endif
 
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
     import Darwin
@@ -118,39 +124,34 @@ class State
         let packetChannel = Queue<Packet>()
         switch sourceReadFromFile
         {
-        case true : //read from pcap file
-            guard let packetSource = try? SwiftPCAP.Offline(path: validPCAPfile) else
-            {
-                print("-> Error opening file")
-                return
-            }
-            self.readPackets(source: packetSource, dest: packetChannel, port: port)
-            
-        default : //read from network interface
-            guard let packetSource = try? SwiftPCAP.Live(interface: deviceName) else
-            {
-                print("-> Error opening network device")
-                return
-            }
-            
-            self.readPackets(source: packetSource, dest: packetChannel, port: port)
+            #if os(Linux)
+            case true : //read from pcap file
+                guard let packetSource = PcapFile(path: validPCAPfile) else
+                {
+                    print("-> Error opening file")
+                    return
+                }
+                self.readPackets(source: packetSource, dest: packetChannel, port: port)
+            #endif
+
+            default : //read from network interface
+                guard let packetSource = CaptureDevice(interface: deviceName) else
+                {
+                    print("-> Error opening network device")
+                    return
+                }
+
+                self.readPackets(source: packetSource, dest: packetChannel, port: port)
         }
     }
     
-    func readPackets(source: SwiftPCAP.Base, dest: Queue<Packet>, port: UInt16)
+    func readPackets(source: PacketStream, dest: Queue<Packet>, port: UInt16)
     {
         print("-> reading packets")
         while self.recording
         {
-            let bytes = source.nextPacket()
-            let timestamp = source.currentHeader.ts
-            let seconds = UInt64(timestamp.tv_sec) //convert seconds to microsecs
-            let microSecs = UInt64(timestamp.tv_usec)
-            let totalMicroSecs = seconds * UInt64(1e6) + microSecs
-            let totalSeconds = totalMicroSecs / 1000000
-            
-            let date = Date(timeIntervalSince1970: TimeInterval(totalSeconds))
-            if bytes.count == 0
+            let (date, data) = source.nextPacket()
+            if data.count == 0
             {
                 //print("\n_", terminator: "\n")
                 
@@ -169,7 +170,7 @@ class State
                 //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
                 // printBytes(bytes)
 
-                let thisPacket = Packet(rawBytes: Data(bytes), timestamp: date, debugPrints: false) //parse the packet
+                let thisPacket = Packet(rawBytes: data, timestamp: date, debugPrints: false) //parse the packet
                 
                 if thisPacket.tcp != nil //capture tcp packet
                 {

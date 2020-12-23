@@ -3,7 +3,13 @@ import SwiftQueue
 import Dispatch
 import ArgumentParser
 import AdversaryLabClientCore
-import SwiftPCAP
+
+#if os(Linux)
+import PacketCaptureLibpcap
+#else
+import PacketCaptureBPF
+#endif
+
 
 var validPCAPfile: String = ""
 var sourceReadFromFile: Bool = false //false = read from interface (default), true = read from file
@@ -47,9 +53,11 @@ struct AdversaryLabClientSwift: ParsableCommand
     
     @Argument(help: "Optional parameter: categorize the packets as [allow] or [block], if omitted user clasifies packets at end of capture by typing \"allow\" to classify as allowed packets, or \"block\" to clasify as blocked packets. This is a required parameter if reading from pcap file.")
     var allowOrBlock: String?
-    
+
+    #if os(Linux)
     @Argument(help: "Optional parameter: path to pcap file to read packets from instead of a physical interface. example: /home/alice/packet_capture.pcap")
     var pcapFile: String?
+    #endif
     
     func validate() throws
     {
@@ -65,7 +73,8 @@ struct AdversaryLabClientSwift: ParsableCommand
                 throw ValidationError("'<allowOrBlock>' must be either 'allow' or 'block'. Use --help for more info.")
             }
         }
-        
+
+        #if os(Linux)
         if self.pcapFile != nil
         {
             let pcapFilePath = self.pcapFile! //above if statment prevents unwrapping a nil
@@ -75,11 +84,7 @@ struct AdversaryLabClientSwift: ParsableCommand
             {
                 //fix, is this the best way to test for a vaid pcap file? Is checking for magic bytes better? https://wiki.wireshark.org/Development/LibpcapFileFormat
                 //fix, will the memory for packetSource be released, doesn't seem to be a function of SwiftPCAP to release memory or close the capture
-                do
-                {
-                    let _ = try SwiftPCAP.Offline(path: pcapFilePath)
-                }
-                catch
+                guard let _ = PcapFile(path: pcapFilePath) else
                 {
                     throw ValidationError("error opening pcap file, file seems to be invalid. Use --help for more info.")
                 }
@@ -93,6 +98,7 @@ struct AdversaryLabClientSwift: ParsableCommand
                 throw ValidationError("pcap file not found! use full path to file. Use --help for more info.")
             }
         }
+        #endif
     }
     
     func run() throws
