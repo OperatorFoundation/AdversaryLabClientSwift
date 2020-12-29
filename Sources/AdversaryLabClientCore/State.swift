@@ -377,12 +377,7 @@ class State
         print("-> add train packet count = \(debug_addTrainPacketCount)")
         print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
         print("--> We are done saving things to the database.")
-        
-        setbuf(__stdoutp, nil);
-        
-        let progress = Progress()
-        let _ = ZIPProgressObserver(object: progress)
-        
+                        
         let fileManager = FileManager()
         let sourceURL = URL(fileURLWithPath: "adversary_data")
         let destinationURL = URL(fileURLWithPath: "adversary_data.zip")
@@ -402,7 +397,7 @@ class State
         {
             print("-> Zipping adversary_data ......")
             print("[                    ]", terminator: "")
-            try fileManager.zipItem(at: sourceURL, to: destinationURL, compressionMethod: .deflate, progress: progress)
+            try fileManager.zipItem(at: sourceURL, to: destinationURL, compressionMethod: .deflate)
         }
         catch
         {
@@ -421,54 +416,5 @@ class State
             self.allowBlockChannel.enqueue(true)
         }
         self.saveCaptured()
-    }
-}
-
-class ZIPProgressObserver: NSObject {
-    @objc var objectToObserve: Progress
-    var observation: NSKeyValueObservation?
-    var displayedCount = 0
-    
-    init(object: Progress) {
-        objectToObserve = object
-        super.init()
-        
-        observation = observe(\.objectToObserve.fractionCompleted, options: [.old, .new])
-        {
-            object, change in
-            
-            //[==============================] //30
-            //[====================] //20
-            let value = Int((change.newValue! * 100)/5)
-            //print("\r", terminator: "\n")
-            var progressString = "["
-            if value > self.displayedCount
-            {
-                self.displayedCount = value
-                
-                
-                for _ in 0..<self.displayedCount
-                {
-                    progressString += "="
-                }
-                for _ in 0..<(20-self.displayedCount)
-                {
-                    progressString += " "
-                    
-                }
-                //print("a", terminator: "\n")
-                progressString += "]"
-               
-                print( "\r" + progressString, terminator: "") 
-                
-            }
-            
-            
-            //print("progress changed from: \(change.oldValue!), updated to: \(change.newValue!)")
-            
-            
-            
-            
-        }
     }
 }
