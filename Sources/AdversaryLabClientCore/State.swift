@@ -11,10 +11,10 @@ import InternetProtocols
 import ZIPFoundation
 import PacketStream
 
-#if os(Linux)
-import PacketCaptureLibpcap
-#else
+#if os(macOS)
 import PacketCaptureBPF
+#elseif os(Linux)
+import PacketCaptureLibpcap
 #endif
 
 #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
