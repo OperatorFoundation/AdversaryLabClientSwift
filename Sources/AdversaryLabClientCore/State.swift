@@ -116,7 +116,7 @@ class State
         #if os(OSX)
         let deviceName: String = "en0"
         #elseif os(Linux)
-        let deviceName: String = "ens18"
+        let deviceName: String = "eth0"
         #else
         let deviceName: String = "eth0"
         #endif
@@ -137,7 +137,7 @@ class State
             default : //read from network interface
                 guard let packetSource = CaptureDevice(interface: deviceName) else
                 {
-                    print("-> Error opening network device")
+                    print("-> Error opening network device named \(deviceName).")
                     return
                 }
 
