@@ -18,8 +18,7 @@ struct AdversaryLabClientSwift: ParsableCommand
 {
     //https://swift.org/blog/argument-parser/
     //https://github.com/apple/swift-argument-parser/blob/master/Documentation/01%20Getting%20Started.md
-    //Old way of handling CLI options https://developer.apple.com/documentation/swift/commandline
-    
+
     //transport, port, allowBlock (optional), path to pcap file (optional)
     //allowBlock is required if pcap file is used - currently parameters specified by argument position
     //   parameters should ultimately use flags
@@ -58,7 +57,7 @@ struct AdversaryLabClientSwift: ParsableCommand
     @Argument(help: "Optional parameter: path to pcap file to read packets from instead of a physical interface. example: /home/alice/packet_capture.pcap")
     var pcapFile: String?
     #endif
-    
+
     func validate() throws
     {
         guard self.port > 0 && self.port <= 65535 else
@@ -107,23 +106,32 @@ struct AdversaryLabClientSwift: ParsableCommand
         print("tip: use --help or -h to print detailed usage info and help")
         sleep(1)
         print("-> Adversary Lab Client is running...Now in Swift!")
-        
+
         let selectedPort = UInt16(self.port)
-        
+
+        var client: AdversaryLabClient?
         if allowOrBlock == nil
         {
             print("buffering mode - user to classify packets at end of capture")
 
+            // Buffering Mode
+            // The user has not yet indicated which category this data belongs to.
+            // Buffer the data until the user enters 'allowed' or 'blocked'.
             DispatchQueue.main.async
             {
                 if sourceReadFromFile
                 {
-                    startCapture(transport: self.transport, port: selectedPort, allowBlock: nil, pcapFile: validPCAPfile)
-
+                    client = AdversaryLabClient(transport: self.transport, port: selectedPort, allowBlock: nil, pcapFile: validPCAPfile)
                 }
                 else
                 {
-                    startCapture(transport: self.transport, port: selectedPort, allowBlock: nil)
+                    client = AdversaryLabClient(transport: self.transport, port: selectedPort, allowBlock: nil)
+
+                    let queue: DispatchQueue = DispatchQueue(label: "AdversaryLab.main")
+                    queue.async
+                    {
+                        listenForDataCategory(client!)
+                    }
                 }
             }
 
@@ -157,16 +165,18 @@ struct AdversaryLabClientSwift: ParsableCommand
             {
                 if sourceReadFromFile
                 {
-                    startCapture(transport: self.transport, port: selectedPort, allowBlock: allowBlock)
+                    client = AdversaryLabClient(transport: self.transport, port: selectedPort, allowBlock: allowBlock)
                 }
                 else
                 {
-                    startCapture(transport: self.transport, port: selectedPort, allowBlock: allowBlock, pcapFile: validPCAPfile)
+                    client = AdversaryLabClient(transport: self.transport, port: selectedPort, allowBlock: allowBlock, pcapFile: validPCAPfile)
                 }
             }
             
-            dispatchMain()
         }
+
+        handleSignals(client!)
+        dispatchMain()
     }
 }
 
@@ -178,6 +188,70 @@ func usage()
     print("-> Example: AdversaryLabClient HTTP 80")
     print("-> Example: AdversaryLabClient HTTPS 443")
     print()
+}
+
+func listenForDataCategory(_ client: AdversaryLabClient)
+{
+    var allowBlockWasSet = false
+    var allowBlock = false
+
+    while !allowBlockWasSet
+    {
+        print("-> Type 'allow' or 'block' when you are done recording <-\n")
+        guard let text = readLine(strippingNewline: true) else
+        {
+            #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+            _ = Darwin.raise(SIGINT)
+            #elseif os(Linux)
+            _ = Glibc.raise(SIGINT)
+            #endif
+            return
+        }
+
+        if text == "allow"
+        {
+            print("-> This packet data will be saved as allowed.")
+            allowBlock = true
+            allowBlockWasSet = true
+        }
+        else if text == "block"
+        {
+            print("-> This packet data will be saved as blocked.")
+            allowBlock = false
+            allowBlockWasSet = true
+        }
+        else
+        {
+            print("-> Received unexpected input for the connection data category please enter 'allow' or 'block':\n \(String(describing: text))")
+        }
+    }
+
+    // This tells us that we are done recording and the buffered packets
+    // are either allowed or blocked based on user input.
+    client.stopRecording(allowBlock)
+    client.saveCaptured()
+}
+
+func handleSignals(_ client: AdversaryLabClient)
+{
+    // Ignore default signal handling, which is killing the app
+    signal(SIGINT, SIG_IGN)
+
+    let signalQueue = DispatchQueue(label: "signals")
+
+    let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: signalQueue)
+    source.setEventHandler
+    {
+        print("event handler happened")
+
+        // Restore default signal handling, which means killing the app
+        signal(SIGINT, SIG_DFL)
+
+        client.stopRecording(true)
+        client.saveCaptured()
+    }
+
+    source.resume()
 }
 
 AdversaryLabClientSwift.main()

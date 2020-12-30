@@ -25,6 +25,12 @@ import PacketCaptureLibpcap
 
 let packetsKey: String = "Packets"
 
+import Foundation
+import InternetProtocols
+
+var validPCAPfile: String = ""
+var sourceReadFromFile: Bool = false //false = read from interface (default), true = read from file
+
 public struct ConnectionPackets: Codable
 { //first incoming/outgoing relative to server
     var Incoming: Packet
@@ -37,7 +43,7 @@ public struct RawConnectionPackets: Codable
     var Outgoing: [Packet] = []
 }
 
-class State
+public class State
 {
     var maybeAllowBlock: Bool? = nil
     let allowBlockChannel: Queue<Bool> = Queue<Bool>()
@@ -59,7 +65,7 @@ class State
     var recording: Bool
     let signalQueue = DispatchQueue(label: "signal")
     
-    init(transport: String, port: UInt16, songClient: SongClient)
+    public init(transport: String, port: UInt16, songClient: SongClient)
     {
         self.transport = transport
         self.port = port
@@ -68,50 +74,7 @@ class State
         
     }    
     
-    func listenForDataCategory()
-    {
-        var allowBlockWasSet = false
-        var allowBlock = false
-        
-        while !allowBlockWasSet
-        {
-            print("-> Type 'allow' or 'block' when you are done recording <-\n")
-            guard let text = readLine(strippingNewline: true) else
-            {
-                #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
-                    _ = Darwin.raise(SIGINT)
-                #elseif os(Linux)
-                    _ = Glibc.raise(SIGINT)
-                #endif
-                return
-            }
-            
-            if text == "allow"
-            {
-                print("-> This packet data will be saved as allowed.")
-                allowBlock = true
-                allowBlockWasSet = true
-            }
-            else if text == "block"
-            {
-                print("-> This packet data will be saved as blocked.")
-                allowBlock = false
-                allowBlockWasSet = true
-            }
-            else
-            {
-                print("-> Received unexpected input for the connection data category please enter 'allow' or 'block':\n \(String(describing: text))")
-            }
-        }
-        // This tells us that we are done recording and the buffered packets
-        // are either allowed or blocked based on user input.
-        self.recording = false
-        allowBlockChannel.enqueue(allowBlock)
-        self.saveCaptured()
-        exit(0)
-    }
-    
-    func capture()
+    public func capture()
     {        
         #if os(OSX)
         let deviceName: String = "en0"
