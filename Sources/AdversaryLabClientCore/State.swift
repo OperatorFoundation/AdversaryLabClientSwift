@@ -64,17 +64,17 @@ public class State
     let port: UInt16
     var recording: Bool
     let signalQueue = DispatchQueue(label: "signal")
+    var source: PacketStream?
     
     public init(transport: String, port: UInt16, songClient: SongClient)
     {
         self.transport = transport
         self.port = port
         songLab = songClient
-        self.recording = true
-        
+        self.recording = false
     }    
     
-    public func capture()
+    public func startCapture()
     {        
         #if os(OSX)
         let deviceName: String = "en0"
@@ -83,7 +83,9 @@ public class State
         #else
         let deviceName: String = "eth0"
         #endif
-        
+
+        self.recording = true
+
         let packetChannel = Queue<Packet>()
         switch sourceReadFromFile
         {
@@ -94,7 +96,19 @@ public class State
                     print("-> Error opening file")
                     return
                 }
-                self.readPackets(source: packetSource, dest: packetChannel, port: port)
+
+                do
+                {
+                    try packetSource.startCapture()
+                }
+                catch
+                {
+                    return
+                }
+
+                self.source = packetSource
+
+                self.readPackets(dest: packetChannel, port: port)
             #endif
 
             default : //read from network interface
@@ -104,40 +118,68 @@ public class State
                     return
                 }
 
-                self.readPackets(source: packetSource, dest: packetChannel, port: port)
+                do
+                {
+                    try packetSource.startCapture()
+                }
+                catch
+                {
+                    return
+                }
+
+                self.source = packetSource
+
+                self.readPackets(dest: packetChannel, port: port)
         }
     }
-    
-    func readPackets(source: PacketStream, dest: Queue<Packet>, port: UInt16)
+
+    public func stopCapture()
+    {
+        self.recording = false
+
+        do
+        {
+            if let source = self.source
+            {
+                try source.stopCapture()
+            }
+        }
+        catch
+        {
+        }
+
+        if self.allowBlockChannel.isEmpty
+        {
+            self.allowBlockChannel.enqueue(true)
+        }
+
+        self.saveCaptured()
+    }
+
+    func readPackets(dest: Queue<Packet>, port: UInt16)
     {
         print("-> reading packets")
         while self.recording
         {
-            let (date, data) = source.nextPacket()
-            if data.count == 0
+            guard let source = self.source else {return}
+            guard let result = source.nextCaptureResult() else
             {
-                //print("\n_", terminator: "\n")
-                
-                if sourceReadFromFile //reading from file and have reached the end of file
-                {
-                    print("\n\nEnd of PCAP file reached.\n")
-                    finishCapture()
-                    return
-                }
-                
-                sleep(1) //wait for a packet
+                stopCapture()
+                return
             }
-            else
-            {
-                debug_packetCount += 1
-                //print("\n\nP# \(debug_packetCount) - bytes \(bytes.count):")
-                // printBytes(bytes)
 
-                let thisPacket = Packet(rawBytes: data, timestamp: date, debugPrints: false) //parse the packet
-                
-                if thisPacket.tcp != nil //capture tcp packet
+            for packet in result.packets
+            {
+                if packet.payload.count > 0
                 {
-                    capturePort(thisPacket, port)
+                    debug_packetCount += 1
+
+                    let thisPacket = Packet(rawBytes: packet.payload, timestamp: packet.timestamp, debugPrints: false) //parse the packet
+
+                    if thisPacket.tcp != nil //capture tcp packet
+                    {
+                        capturePort(thisPacket, port)
+                    }
                 }
             }
         }
@@ -369,15 +411,5 @@ public class State
         print("\n--> We are done zipping the database. Bye Now!\n")
         
         exit(1)
-    }
-    
-    func finishCapture()
-    {
-        self.recording = false
-        if self.allowBlockChannel.isEmpty
-        {
-            self.allowBlockChannel.enqueue(true)
-        }
-        self.saveCaptured()
     }
 }

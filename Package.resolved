@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/Datable.git",
         "state": {
           "branch": null,
-          "revision": "1c23f2b72d0d0cf4386fad05f8a5db4b91e8d304",
-          "version": "3.0.2"
+          "revision": "808ab1b2c021be3d2950ec2c2894cd48d532d592",
+          "version": "3.0.3"
         }
       },
       {
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/PacketCaptureBPF.git",
         "state": {
           "branch": null,
-          "revision": "27b467b13e9b4b9894c46ddd0909f071127886b0",
-          "version": "0.0.1"
+          "revision": "1cd5f4ded666b8a1bc631a8760011dd5870e5cc8",
+          "version": "0.2.1"
         }
       },
       {
@@ -60,8 +60,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/PacketCaptureLibpcap.git",
         "state": {
           "branch": null,
-          "revision": "b07a554cfbb70bc7f339d3a2ea3b8ca726100d18",
-          "version": "0.0.5"
+          "revision": "40696ad61ce4c2e0ea4d96c06ca173c95c73d895",
+          "version": "0.2.0"
         }
       },
       {
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/OperatorFoundation/PacketStream.git",
         "state": {
           "branch": null,
-          "revision": "7a2fccc603cbc773db5e97fcd276ec75c7d380b2",
-          "version": "0.0.1"
+          "revision": "2340145ec9c547f23aeb0464a3b230f6afaa529b",
+          "version": "0.2.1"
         }
       },
       {

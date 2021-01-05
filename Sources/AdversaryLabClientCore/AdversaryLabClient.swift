@@ -23,17 +23,17 @@ public class AdversaryLabClient
         state = State(transport: transport, port: port, songClient: songClient)
         state.maybeAllowBlock = allowBlock
 
-        state.capture()
+        state.startCapture()
     }
 
     public func stopRecording(_ allowBlock: Bool)
     {
-        state.recording = false
         if state.allowBlockChannel.isEmpty
         {
             state.allowBlockChannel.enqueue(allowBlock)
         }
-        state.saveCaptured()
+
+        state.stopCapture()
     }
 
     public func saveCaptured()
