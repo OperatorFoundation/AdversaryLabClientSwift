@@ -403,13 +403,13 @@ public class State
             print("-> Zipping adversary_data ......")
             print("[                    ]", terminator: "")
             try fileManager.zipItem(at: sourceURL, to: destinationURL, compressionMethod: .deflate)
+            print("-> Zipped adversary_data ......")
         }
         catch
         {
             print("Creation of adversary_data zip archive failed with error:\(error)")
         }
-        print("\n--> We are done zipping the database. Bye Now!\n")
         
-        exit(1)
+        print("\n--> We are done zipping the database. Bye Now!\n")
     }
 }
