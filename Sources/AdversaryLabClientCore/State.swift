@@ -401,7 +401,17 @@ public class State
         do
         {
             print("-> Zipping adversary_data ......")
+            
+            #if os(macOS)
+            setbuf(__stdoutp, nil)
+            let progress = Progress()
+            let _ = ZIPProgressObserver(object: progress)
+            print("[                    ]", terminator: "")
+            try fileManager.zipItem(at: sourceURL, to: destinationURL, progress: progress)
+            #else
             try fileManager.zipItem(at: sourceURL, to: destinationURL)
+            #endif
+            
             print("-> Zipped adversary_data ......")
         }
         catch
@@ -412,3 +422,54 @@ public class State
         print("\n--> We are done zipping the database. Bye Now!\n")
     }
 }
+
+#if os(macOS)
+class ZIPProgressObserver: NSObject {
+    @objc var objectToObserve: Progress
+    var observation: NSKeyValueObservation?
+    var displayedCount = 0
+    
+    init(object: Progress) {
+        objectToObserve = object
+        super.init()
+        
+        observation = observe(\.objectToObserve.fractionCompleted, options: [.old, .new])
+        {
+            object, change in
+            
+            //[==============================] //30
+            //[====================] //20
+            let value = Int((change.newValue! * 100)/5)
+            //print("\r", terminator: "\n")
+            var progressString = "["
+            if value > self.displayedCount
+            {
+                self.displayedCount = value
+                
+                
+                for _ in 0..<self.displayedCount
+                {
+                    progressString += "="
+                }
+                for _ in 0..<(20-self.displayedCount)
+                {
+                    progressString += " "
+                    
+                }
+                //print("a", terminator: "\n")
+                progressString += "]"
+               
+                print( "\r" + progressString, terminator: "")
+                
+            }
+            
+            
+            //print("progress changed from: \(change.oldValue!), updated to: \(change.newValue!)")
+            
+            
+            
+            
+        }
+    }
+}
+#endif
