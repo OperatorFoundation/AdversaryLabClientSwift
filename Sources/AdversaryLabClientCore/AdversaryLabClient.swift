@@ -22,7 +22,10 @@ public class AdversaryLabClient
         let songClient = SongClient()
         state = State(transport: transport, port: port, songClient: songClient)
         state.maybeAllowBlock = allowBlock
-
+    }
+    
+    public func startRecording()
+    {
         state.startCapture()
     }
 
