@@ -401,8 +401,7 @@ public class State
         do
         {
             print("-> Zipping adversary_data ......")
-            print("[                    ]", terminator: "")
-            try fileManager.zipItem(at: sourceURL, to: destinationURL, compressionMethod: .deflate)
+            try fileManager.zipItem(at: sourceURL, to: destinationURL)
             print("-> Zipped adversary_data ......")
         }
         catch
