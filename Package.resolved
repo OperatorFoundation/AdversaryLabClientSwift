@@ -56,15 +56,6 @@
         }
       },
       {
-        "package": "PacketCaptureLibpcap",
-        "repositoryURL": "https://github.com/OperatorFoundation/PacketCaptureLibpcap.git",
-        "state": {
-          "branch": null,
-          "revision": "40696ad61ce4c2e0ea4d96c06ca173c95c73d895",
-          "version": "0.2.0"
-        }
-      },
-      {
         "package": "PacketStream",
         "repositoryURL": "https://github.com/OperatorFoundation/PacketStream.git",
         "state": {
@@ -107,15 +98,6 @@
           "branch": null,
           "revision": "4ce4a4f66eea05c900d447af8c07ecaac720716c",
           "version": "1.2.2"
-        }
-      },
-      {
-        "package": "SwiftPCAP",
-        "repositoryURL": "https://github.com/OperatorFoundation/SwiftPCAP.git",
-        "state": {
-          "branch": null,
-          "revision": "6bc1a1f6418cfade2cc67651ee891f2bfd42f28d",
-          "version": "1.1.10"
         }
       },
       {

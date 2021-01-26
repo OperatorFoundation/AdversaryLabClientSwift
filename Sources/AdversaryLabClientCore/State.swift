@@ -162,12 +162,20 @@ public class State
         while self.recording
         {
             guard let source = self.source else {return}
+            
+            print("1) Preparing to call nextCaptureResult.")
+            sleep(10)
             guard let result = source.nextCaptureResult() else
             {
+                print("2.a) Calling stopCapture.")
+                sleep(10)
                 stopCapture()
+                print("2.b) stopCapture complete.")
                 return
             }
-
+            sleep(10)
+            print("2) nextCaptureResult complete.")
+            
             for packet in result.packets
             {
                 if packet.payload.count > 0
