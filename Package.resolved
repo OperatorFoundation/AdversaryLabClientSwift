@@ -20,6 +20,15 @@
         }
       },
       {
+        "package": "Chord",
+        "repositoryURL": "https://github.com/OperatorFoundation/Chord.git",
+        "state": {
+          "branch": null,
+          "revision": "080cb496d8691571cad2ff241265a1e544d0960c",
+          "version": "0.0.10"
+        }
+      },
+      {
         "package": "Datable",
         "repositoryURL": "https://github.com/OperatorFoundation/Datable.git",
         "state": {

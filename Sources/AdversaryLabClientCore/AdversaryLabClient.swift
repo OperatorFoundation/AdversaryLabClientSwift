@@ -19,6 +19,18 @@ public class AdversaryLabClient
             sourceReadFromFile = true
         }
 
+        if !FileManager.default.fileExists(atPath: databaseDirectory.path)
+        {
+            do
+            {
+                try FileManager.default.createDirectory(at: databaseDirectory, withIntermediateDirectories: false)
+            }
+            catch
+            {
+                print("Error creating database directory: \(error)")
+            }
+        }
+
         let songClient = SongClient()
         state = State(transport: transport, port: port, songClient: songClient)
         state.maybeAllowBlock = allowBlock

@@ -13,7 +13,7 @@ import RawPacket
 
 public struct SongClient
 {
-    let db = Symphony(root: URL(fileURLWithPath: "adversary_data"))
+    let db = Symphony(root: databaseDirectory)
     
     mutating func AddRawTrainPacket(transport: String, allowBlock: Bool, conn: RawConnectionPackets)
     {

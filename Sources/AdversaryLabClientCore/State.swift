@@ -6,10 +6,12 @@
 //
 
 import Foundation
-import SwiftQueue
+
+import Chord
 import InternetProtocols
-import ZIPFoundation
 import PacketStream
+import SwiftQueue
+import ZIPFoundation
 
 #if os(macOS)
 import PacketCaptureBPF
@@ -49,9 +51,8 @@ public class State
     let allowBlockChannel: Queue<Bool> = Queue<Bool>()
     var captured: [Connection:ConnectionPackets] = [:]
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
-    let packetChannel: Queue<Packet> = Queue<Packet>()
-    let recordable: Queue<ConnectionPackets> = Queue<ConnectionPackets>()
-    let queue: DispatchQueue = DispatchQueue(label: "AdversaryLab")
+    let packetChannel = Queue<Packet>()
+    let recordable = Queue<ConnectionPackets>()
     var debug_packetCount = 0
     var debug_portMatchPacketsCount = 0
     var debug_payloadPacketsCount = 0
@@ -65,6 +66,7 @@ public class State
     var recording: Bool
     let signalQueue = DispatchQueue(label: "signal")
     var source: PacketStream?
+    var repeatingTask: RepeatingTask? = nil
     
     public init(transport: String, port: UInt16, songClient: SongClient)
     {
@@ -107,8 +109,7 @@ public class State
                 }
 
                 self.source = packetSource
-
-                self.readPackets(dest: packetChannel, port: port)
+                self.readPackets(dest: packetChannel, port: self.port)
             #endif
 
             default : //read from network interface
@@ -128,15 +129,19 @@ public class State
                 }
 
                 self.source = packetSource
-
-                self.readPackets(dest: packetChannel, port: port)
+                self.readPackets(dest: packetChannel, port: self.port)
         }
     }
 
     public func stopCapture()
     {
-        self.recording = false
-
+        self.repeatingTask?.cancel()
+        self.repeatingTask?.wait()
+        cleanup()
+    }
+    
+    func cleanup()
+    {
         do
         {
             if let source = self.source
@@ -144,8 +149,9 @@ public class State
                 try source.stopCapture()
             }
         }
-        catch
+        catch let stopError
         {
+            print("Stop capture error: \(stopError)")
         }
 
         if self.allowBlockChannel.isEmpty
@@ -159,37 +165,28 @@ public class State
     func readPackets(dest: Queue<Packet>, port: UInt16)
     {
         print("-> reading packets")
-        while self.recording
+        
+        repeatingTask = RepeatingTask
         {
-            guard let source = self.source else {return}
-            
-            print("1) Preparing to call nextCaptureResult.")
-            sleep(10)
-            guard let result = source.nextCaptureResult() else
-            {
-                print("2.a) Calling stopCapture.")
-                sleep(10)
-                stopCapture()
-                print("2.b) stopCapture complete.")
-                return
-            }
-            sleep(10)
-            print("2) nextCaptureResult complete.")
+            guard let source = self.source else {return false}
+            guard let result = source.nextCaptureResult() else {return false}
             
             for packet in result.packets
             {
                 if packet.payload.count > 0
                 {
-                    debug_packetCount += 1
+                    self.debug_packetCount += 1
 
                     let thisPacket = Packet(rawBytes: packet.payload, timestamp: packet.timestamp, debugPrints: false) //parse the packet
 
                     if thisPacket.tcp != nil //capture tcp packet
                     {
-                        capturePort(thisPacket, port)
+                        self.capturePort(thisPacket, port)
                     }
                 }
             }
+            
+            return true
         }
     }
     
@@ -290,7 +287,7 @@ public class State
     func saveCaptured()
     {
         print("-> Saving captured packets... ")
-        print("recordable: \(!recordable.isEmpty)")
+        print("-> Do we have any packets to save? \(!recordable.isEmpty)")
         var buffer: [ConnectionPackets] = []
         
         while !recordable.isEmpty
@@ -314,10 +311,6 @@ public class State
                 buffer.append(connPackets)
             }
         }
-//        else
-//        {
-//            print("No complete connections to save.")
-//        }
         
         print("-> @")
         var allowBlock = false
@@ -381,15 +374,6 @@ public class State
                 }
             }
         }
-        
-        print("-> total packet count = \(debug_packetCount)")
-        print("-> port match packet count = \(debug_portMatchPacketsCount)")
-        print("-> payload packet count = \(debug_payloadPacketsCount)")
-        print("-> payload recorded packet count = \(debug_recordedPacketsCount)")
-        print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
-        print("-> add train packet count = \(debug_addTrainPacketCount)")
-        print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
-        print("--> We are done saving things to the database.")
                         
         let fileManager = FileManager()
         let sourceURL = URL(fileURLWithPath: "adversary_data")
@@ -419,12 +403,28 @@ public class State
             #else
             try fileManager.zipItem(at: sourceURL, to: destinationURL)
             #endif
-            
-            print("-> Zipped adversary_data ......")
         }
         catch
         {
-            print("Creation of adversary_data zip archive failed with error:\(error)")
+            //print("Zip error:\(error)")
+        }
+        
+        if debug_addTrainPacketCount > 0
+        {
+            print("-> We saved \(debug_addTrainPacketCount) packets.")
+        }
+        else
+        {
+            print("-> There were no packets to save this time!")
+            print("-> DEBUG ONLY:")
+            print("-> total packet count = \(debug_packetCount)")
+            print("-> port match packet count = \(debug_portMatchPacketsCount)")
+            print("-> payload packet count = \(debug_payloadPacketsCount)")
+            print("-> payload recorded packet count = \(debug_recordedPacketsCount)")
+            print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
+            print("-> add train packet count = \(debug_addTrainPacketCount)")
+            print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
+            print("-> END DEBUG")
         }
         
         print("\n--> We are done zipping the database. Bye Now!\n")
