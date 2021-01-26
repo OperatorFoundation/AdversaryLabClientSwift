@@ -64,7 +64,7 @@ let package = Package(
         .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "3.0.2"),
         .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", from: "0.0.3"),
         .package(url: "https://github.com/OperatorFoundation/InternetProtocols.git", from: "1.1.1"),
-        .package(url: "https://github.com/OperatorFoundation/PacketCaptureLibpcap.git", from: "0.2.0"),
+        .package(url: "https://github.com/OperatorFoundation/PacketCaptureLibpcap.git", from: "0.2.1"),
         .package(url: "https://github.com/OperatorFoundation/PacketStream.git", from: "0.0.1"),
         .package(url: "https://github.com/OperatorFoundation/Song.git", from: "0.1.3"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.11"),
