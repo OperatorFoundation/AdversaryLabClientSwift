@@ -183,10 +183,7 @@ public class State
         repeatingTask = RepeatingTask
         {
             guard let source = self.source else {return false}
-            
-            print("1> Calling source.nextCaptureResult()")
             guard let result = source.nextCaptureResult() else {return false}
-            print("2> Called source.nextCaptureResult()")
             
             for packet in result.packets
             {
