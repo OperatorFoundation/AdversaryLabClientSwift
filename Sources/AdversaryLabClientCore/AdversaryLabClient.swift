@@ -27,7 +27,7 @@ public class AdversaryLabClient
             }
             catch
             {
-                print("Error creating database directory: \(error)")
+                print("-> Error creating database directory: \(error)")
             }
         }
 

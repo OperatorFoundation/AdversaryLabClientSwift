@@ -78,8 +78,6 @@ public class State
     
     public func startCapture()
     {
-        print("-1- Start capture called.")
-        
         #if os(OSX)
         let deviceName: String = "en0"
         #elseif os(Linux)
@@ -116,16 +114,13 @@ public class State
 
             default : //read from network interface
                 
-                print("-2- Capture Device")
                 guard let packetSource = CaptureDevice(interface: deviceName) else
                 {
-                    print("-> Error opening network device named \(deviceName).")
                     return
                 }
 
                 do
                 {
-                    print("-3- packetSource.startCapture")
                     try packetSource.startCapture()
                 }
                 catch
@@ -133,28 +128,20 @@ public class State
                     return
                 }
 
-                print("-4-")
                 self.source = packetSource
                 self.readPackets(dest: packetChannel, port: self.port)
         }
-        
-        print("-5- Start capture finished.")
     }
 
     public func stopCapture()
     {
-        print("1. Stop Capture called. ")
         self.repeatingTask?.cancel()
-        print("2.")
         self.repeatingTask?.wait()
-        print("3.")
         cleanup()
-        print("4. Stop capture complete.")
     }
     
     func cleanup()
     {
-        print("1) Cleanup called.")
         do
         {
             if let source = self.source
@@ -173,7 +160,6 @@ public class State
         }
 
         self.saveCaptured()
-        print("2) Cleanup finished.")
     }
 
     func readPackets(dest: Queue<Packet>, port: UInt16)
@@ -228,12 +214,9 @@ public class State
         //print("-> Capturing port \(port)")
 
         guard let conn = NewConnection(packet: packet) else { return }
-        
-        //print(conn)
-        
         guard conn.CheckPort(port: port) else { return }
-        debug_portMatchPacketsCount += 1
         
+        debug_portMatchPacketsCount += 1
         recordRawPacket(packet, port)
         
         if packet.tcp?.payload != nil
@@ -309,7 +292,7 @@ public class State
             print("-> Saving complete connections")
             guard let connPackets = recordable.dequeue() else
             {
-                print(".")
+                print("-> .")
                 return
             }
             
@@ -400,7 +383,7 @@ public class State
             }
             catch let error as NSError
             {
-                print("Couldn't delete existing zip archive of adversary_data: \(error)")
+                print("-> Couldn't delete existing zip archive of adversary_data: \(error)")
             }
         }
         
@@ -484,13 +467,7 @@ class ZIPProgressObserver: NSObject {
                 print( "\r" + progressString, terminator: "")
                 
             }
-            
-            
             //print("progress changed from: \(change.oldValue!), updated to: \(change.newValue!)")
-            
-            
-            
-            
         }
     }
 }

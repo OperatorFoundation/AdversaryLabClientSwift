@@ -85,10 +85,10 @@ struct AdversaryLabClientSwift: ParsableCommand
                 //fix, will the memory for packetSource be released, doesn't seem to be a function of SwiftPCAP to release memory or close the capture
                 guard let _ = PcapFile(path: pcapFilePath) else
                 {
-                    throw ValidationError("error opening pcap file, file seems to be invalid. Use --help for more info.")
+                    throw ValidationError("-> error opening pcap file, file seems to be invalid. Use --help for more info.")
                 }
                 
-                print("valid pcap file exists!")
+                print("-> valid pcap file exists!")
                 sourceReadFromFile = true
                 validPCAPfile = pcapFilePath
             }
@@ -102,8 +102,8 @@ struct AdversaryLabClientSwift: ParsableCommand
     
     func run() throws
     {
-        print("Delaying 1 second to allow debugger to attach to process...")
-        print("tip: use --help or -h to print detailed usage info and help")
+        print("-> Delaying 1 second to allow debugger to attach to process...")
+        print("-> tip: use --help or -h to print detailed usage info and help")
         sleep(1)
         print("-> Adversary Lab Client is running...Now in Swift!")
 
@@ -112,7 +112,7 @@ struct AdversaryLabClientSwift: ParsableCommand
         var client: AdversaryLabClient?
         if allowOrBlock == nil
         {
-            print("buffering mode - user to classify packets at end of capture")
+            print("-> buffering mode - user to classify packets at end of capture")
 
             // Buffering Mode
             // The user has not yet indicated which category this data belongs to.
@@ -159,7 +159,7 @@ struct AdversaryLabClientSwift: ParsableCommand
             }
             
             guard let ab = self.allowOrBlock else { return }
-            print("streaming mode - packets will be classified as \(ab)ed")
+            print("-> streaming mode - packets will be classified as \(ab)ed")
 
             DispatchQueue.main.async
             {
@@ -242,8 +242,6 @@ func handleSignals(_ client: AdversaryLabClient)
     let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: signalQueue)
     source.setEventHandler
     {
-        print("event handler happened")
-
         // Restore default signal handling, which means killing the app
         signal(SIGINT, SIG_DFL)
 
