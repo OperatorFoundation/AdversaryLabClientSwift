@@ -76,16 +76,25 @@ public class State
         self.recording = false
     }    
     
-    public func startCapture()
+    public func startCapture(_ interface: String?)
     {
-        #if os(OSX)
-        let deviceName: String = "en0"
-        #elseif os(Linux)
-        let deviceName: String = "eth0"
-        #else
-        let deviceName: String = "eth0"
-        #endif
-
+        let deviceName: String
+        
+        if let name = interface
+        {
+            deviceName = name
+        }
+        else
+        {
+            #if os(OSX)
+            deviceName = "en0"
+            #elseif os(Linux)
+            deviceName = "eth0"
+            #else
+            deviceName = "eth0"
+            #endif
+        }
+        
         self.recording = true
 
         let packetChannel = Queue<Packet>()

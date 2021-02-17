@@ -13,7 +13,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1"),
         .package(url: "https://github.com/OperatorFoundation/Bits.git", from: "1.0.3"),
-        .package(url:"https://github.com/OperatorFoundation/Chord.git", from: "0.0.10"),
+        .package(url: "https://github.com/OperatorFoundation/Chord.git", from: "0.0.10"),
         .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "3.0.2"),
         .package(url: "https://github.com/OperatorFoundation/InternetProtocols.git", from: "1.1.1"),
         .package(url: "https://github.com/OperatorFoundation/PacketCaptureBPF.git", from: "0.2.0"),

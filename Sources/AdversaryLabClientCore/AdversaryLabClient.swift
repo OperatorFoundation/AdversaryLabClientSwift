@@ -36,9 +36,9 @@ public class AdversaryLabClient
         state.maybeAllowBlock = allowBlock
     }
     
-    public func startRecording()
+    public func startRecording(_ interface: String?)
     {
-        state.startCapture()
+        state.startCapture(interface)
     }
 
     public func stopRecording(_ allowBlock: Bool)
