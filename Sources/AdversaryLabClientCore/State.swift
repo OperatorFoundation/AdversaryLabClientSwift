@@ -56,6 +56,7 @@ public class State
     var debug_packetCount = 0
     var debug_portMatchPacketsCount = 0
     var debug_payloadPacketsCount = 0
+    var debug_recordedRawPacketsCount = 0
     var debug_recordedPacketsCount = 0
     var debug_recordedCompletePacketsCount = 0
     var debug_addTrainPacketCount = 0
@@ -253,6 +254,8 @@ public class State
             connPackets.Outgoing.append(packet)
             rawCaptured[conn] = connPackets
         }
+        
+        debug_recordedRawPacketsCount += 1
     }
     
     func recordPacket(_ packet: Packet, _ port: UInt16)
@@ -426,6 +429,7 @@ public class State
             print("-> total packet count = \(debug_packetCount)")
             print("-> port match packet count = \(debug_portMatchPacketsCount)")
             print("-> payload packet count = \(debug_payloadPacketsCount)")
+            print("-> recorded raw packet count = \(debug_recordedRawPacketsCount)")
             print("-> payload recorded packet count = \(debug_recordedPacketsCount)")
             print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
             print("-> add train packet count = \(debug_addTrainPacketCount)")
