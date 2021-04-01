@@ -83,17 +83,20 @@ public class State
         
         if let name = interface
         {
+            // User has provided the interface name, use that
             deviceName = name
         }
         else
         {
-            #if os(OSX)
-            deviceName = "en0"
-            #elseif os(Linux)
-            deviceName = "eth0"
-            #else
-            deviceName = "eth0"
-            #endif
+            // Try to guess the correct interface
+            // If we can't then we cannot proceed
+            guard let name = InterfaceController.guessUserInterface()
+            else
+            {
+                return
+            }
+            
+            deviceName = name
         }
         
         self.recording = true
