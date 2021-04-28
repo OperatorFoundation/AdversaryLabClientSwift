@@ -4,7 +4,7 @@ import PackageDescription
 #if os(macOS)
 let package = Package(
     name: "AdversaryLabClientSwift",
-    platforms: [.macOS(.v10_15)],
+    platforms: [.macOS(.v11)],
     products: [
         .executable(name: "AdversaryLabClient", targets: ["AdversaryLabClient"]),
         .library(name: "AdversaryLabClientCore", targets: ["AdversaryLabClientCore"]),
