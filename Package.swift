@@ -42,7 +42,7 @@ let package = Package(
             "SwiftQueue",
             "ZIPFoundation",
             .product(name: "Symphony", package: "Song"),
-            .product(name: "PacketCaptureBPF", package: "PacketCaptureBPF", condition: .when(platforms: [.macOS])),
+            .product(name: "PacketCaptureBPF", package: "PacketCaptureBPF"),
         ]),
         .target(name: "RawPacket"),
         .testTarget(
@@ -79,8 +79,6 @@ let package = Package(
                 "AdversaryLabClientCore",
                 //"PacketStream",
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                //.product(name: "PacketCaptureLibpcap", package: "PacketCaptureLibpcap", condition: .when(platforms: [.linux])),
-                //.product(name: "PacketCaptureBPF", package: "PacketCaptureBPF", condition: .when(platforms: [.macOS])),
         ]),
         .target(name: "AdversaryLabClientCore", dependencies: [
             "Bits",
@@ -93,7 +91,7 @@ let package = Package(
             "SwiftQueue",
             "ZIPFoundation",
             .product(name: "Symphony", package: "Song"),
-            .product(name: "PacketCaptureLibpcap", package: "PacketCaptureLibpcap", condition: .when(platforms: [.linux])),
+            .product(name: "PacketCaptureLibpcap", package: "PacketCaptureLibpcap"),
         ]),
         .target(name: "RawPacket"),
         .testTarget(
