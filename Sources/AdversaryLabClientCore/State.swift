@@ -129,6 +129,7 @@ public class State
                 
                 guard let packetSource = CaptureDevice(interface: deviceName) else
                 {
+                    print("-> Error getting capture device with interface \(deviceName). Packets will not be recorded.")
                     return
                 }
 
@@ -138,6 +139,7 @@ public class State
                 }
                 catch
                 {
+                    print("-> Error starting capture device: \(error)")
                     return
                 }
 
