@@ -38,7 +38,7 @@ public class AdversaryLabClient
     
     public func startRecording(_ interface: String?)
     {
-        state.startCapture(interface)
+        _ = state.startCapture(interface)
     }
 
     public func stopRecording(_ allowBlock: Bool)

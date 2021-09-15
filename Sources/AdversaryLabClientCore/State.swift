@@ -77,7 +77,7 @@ public class State
         self.recording = false
     }    
     
-    public func startCapture(_ interface: String?)
+    public func startCapture(_ interface: String?) -> Bool
     {
         let deviceName: String
         
@@ -93,7 +93,8 @@ public class State
             guard let name = InterfaceController.guessUserInterface()
             else
             {
-                return
+                print("-> Unable to start capture: an interface name was not provided, and we were unable to find one to try.")
+                return false
             }
             
             deviceName = name
@@ -108,8 +109,9 @@ public class State
             case true : //read from pcap file
                 guard let packetSource = PcapFile(path: validPCAPfile) else
                 {
+                    print("-> Unable to start capture: ")
                     print("-> Error opening file")
-                    return
+                    return false
                 }
 
                 do
@@ -118,7 +120,8 @@ public class State
                 }
                 catch
                 {
-                    return
+                    print("-> Unable to start capture: \(error)")
+                    return false
                 }
 
                 self.source = packetSource
@@ -130,7 +133,7 @@ public class State
                 guard let packetSource = CaptureDevice(interface: deviceName) else
                 {
                     print("-> Error getting capture device with interface \(deviceName). Packets will not be recorded.")
-                    return
+                    return false
                 }
 
                 do
@@ -140,12 +143,14 @@ public class State
                 catch
                 {
                     print("-> Error starting capture device: \(error)")
-                    return
+                    return false
                 }
 
                 self.source = packetSource
                 self.readPackets(dest: packetChannel, port: self.port)
         }
+        
+        return true
     }
 
     public func stopCapture()
