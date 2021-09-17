@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "RawPacket", targets: ["RawPacket"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.4.3"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.1"),
         .package(url: "https://github.com/OperatorFoundation/Bits.git", from: "1.0.6"),
         .package(url: "https://github.com/OperatorFoundation/Chord.git", from: "0.0.12"),
         .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "3.0.4"),
@@ -28,7 +28,6 @@ let package = Package(
             name: "AdversaryLabClient",
             dependencies: [
                 "AdversaryLabClientCore",
-                //"PacketStream",
             .product(name: "ArgumentParser", package: "swift-argument-parser")
         ]),
         .target(name: "AdversaryLabClientCore", dependencies: [
