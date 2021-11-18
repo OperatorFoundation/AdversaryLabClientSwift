@@ -53,7 +53,7 @@ public class State
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
     let packetChannel = Queue<Packet>()
     let recordable = Queue<ConnectionPackets>()
-    var debugPrints: Bool = false
+    var debugPrints: Bool
     var debug_packetCount = 0
     var debug_portMatchPacketsCount = 0
     var debug_payloadPacketsCount = 0
