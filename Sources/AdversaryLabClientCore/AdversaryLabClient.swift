@@ -11,7 +11,7 @@ public class AdversaryLabClient
 {
     let state: State
 
-    public init(transport: String, port: UInt16, allowBlock: Bool?, pcapFile: String? = nil)
+    public init(transport: String, port: UInt16, allowBlock: Bool?, pcapFile: String? = nil, debugPrints: Bool = false)
     {
         if let pcap = pcapFile
         {
@@ -32,7 +32,7 @@ public class AdversaryLabClient
         }
 
         let songClient = SongClient()
-        state = State(transport: transport, port: port, songClient: songClient)
+        state = State(transport: transport, port: port, songClient: songClient, debugPrints: debugPrints)
         state.maybeAllowBlock = allowBlock
     }
     
