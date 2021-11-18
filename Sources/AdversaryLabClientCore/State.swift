@@ -53,6 +53,7 @@ public class State
     var rawCaptured: [Connection:RawConnectionPackets] = [:]
     let packetChannel = Queue<Packet>()
     let recordable = Queue<ConnectionPackets>()
+    var debugPrints: Bool = false
     var debug_packetCount = 0
     var debug_portMatchPacketsCount = 0
     var debug_payloadPacketsCount = 0
@@ -69,12 +70,13 @@ public class State
     var source: PacketStream?
     var repeatingTask: RepeatingTask? = nil
     
-    public init(transport: String, port: UInt16, songClient: SongClient)
+    public init(transport: String, port: UInt16, songClient: SongClient, debugPrints: Bool = false)
     {
         self.transport = transport
         self.port = port
         songLab = songClient
         self.recording = false
+        self.debugPrints = debugPrints
     }    
     
     public func startCapture(_ interface: String?) -> Bool
@@ -198,7 +200,7 @@ public class State
                     self.debug_packetCount += 1
 
                     //parse the packet
-                    let thisPacket = Packet(ipv4Bytes: packet.payload, timestamp: packet.timestamp)
+                    let thisPacket = Packet(ipv4Bytes: packet.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
 
                     //capture the tcp packet
                     if thisPacket.tcp != nil //capture tcp packet
