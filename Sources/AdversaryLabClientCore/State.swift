@@ -197,7 +197,7 @@ public class State
                 {
                     self.debug_packetCount += 1
 
-                    let thisPacket = Packet(rawBytes: packet.payload, timestamp: packet.timestamp, debugPrints: false) //parse the packet
+                    let thisPacket = Packet(rawBytes: packet.payload, timestamp: packet.timestamp, debugPrints: true) //parse the packet
 
                     if thisPacket.tcp != nil //capture tcp packet
                     {
