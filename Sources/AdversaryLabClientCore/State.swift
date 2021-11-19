@@ -8,6 +8,7 @@
 import Foundation
 
 import Chord
+import Datable
 import InternetProtocols
 import PacketStream
 import SwiftQueue
@@ -34,13 +35,15 @@ var validPCAPfile: String = ""
 var sourceReadFromFile: Bool = false //false = read from interface (default), true = read from file
 
 public struct ConnectionPackets: Codable
-{ //first incoming/outgoing relative to server
+{
+    //first incoming/outgoing relative to server
     var Incoming: Packet
     var Outgoing: Packet?
 }
 
 public struct RawConnectionPackets: Codable
-{ //all packets
+{
+    //all packets
     var Incoming: [Packet] = []
     var Outgoing: [Packet] = []
 }
@@ -199,10 +202,17 @@ public class State
                 {
                     self.debug_packetCount += 1
 
-                    //parse the packet
+                    // DEBUG: Print the payload
+                    if (self.debugPrints)
+                    {
+                        let payloadHex = packet.payload.hexEncodedString()
+                        print("-> Raw packet payload: \n\(payloadHex)")
+                    }
+                    
+                    // parse the packet
                     let thisPacket = Packet(ipv4Bytes: packet.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
 
-                    //capture the tcp packet
+                    // capture the tcp packet
                     if thisPacket.tcp != nil //capture tcp packet
                     {
                         self.capturePort(thisPacket, port)
@@ -453,7 +463,30 @@ public class State
         
         print("\n--> We are done zipping the database. Bye Now!\n")
     }
+    
+    
 }
+
+extension Data
+{
+  /// A hexadecimal string representation of the bytes.
+  func hexEncodedString() -> String
+    {
+    let hexDigits = Array("0123456789abcdef".utf16)
+    var hexChars = [UTF16.CodeUnit]()
+    hexChars.reserveCapacity(count * 2)
+
+    for byte in self
+    {
+      let (index1, index2) = Int(byte).quotientAndRemainder(dividingBy: 16)
+      hexChars.append(hexDigits[index1])
+      hexChars.append(hexDigits[index2])
+    }
+
+    return String(utf16CodeUnits: hexChars, count: hexChars.count)
+  }
+}
+
 
 #if os(macOS)
 class ZIPProgressObserver: NSObject {
