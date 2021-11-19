@@ -218,6 +218,17 @@ public class State
                     {
                         self.capturePort(thisPacket, port)
                     }
+                    else // FIXME: THIS IS A WORKAROUND FOR WIRELESS
+                    {
+                        if let ethernetPacket = thisPacket.ethernet
+                        {
+                            let wirelessPacket = Packet(ipv4Bytes: ethernetPacket.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
+                            if wirelessPacket.tcp != nil
+                            {
+                                self.capturePort(wirelessPacket, port)
+                            }
+                        }
+                    }
                 }
             }
             
