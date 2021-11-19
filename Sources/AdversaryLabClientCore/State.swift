@@ -211,7 +211,7 @@ public class State
                     }
                     
                     // parse the packet
-                    let thisPacket = Packet(ipv4Bytes: packet.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
+                    let thisPacket = Packet(rawBytes: packet.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
 
                     // capture the tcp packet
                     if thisPacket.tcp != nil //capture tcp packet
