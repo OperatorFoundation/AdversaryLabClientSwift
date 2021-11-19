@@ -205,8 +205,9 @@ public class State
                     // DEBUG: Print the payload
                     if (self.debugPrints)
                     {
-                        let payloadHex = packet.payload.hexEncodedString()
-                        print("-> Raw packet payload: \n\(payloadHex)")
+                        print("-> Raw packet payload: ")
+                        _ = printDataBytes(bytes: packet.payload, hexDumpFormat: true, seperator: "", decimal: false)
+                        
                     }
                     
                     // parse the packet
@@ -465,26 +466,6 @@ public class State
     }
     
     
-}
-
-extension Data
-{
-  /// A hexadecimal string representation of the bytes.
-  func hexEncodedString() -> String
-    {
-    let hexDigits = Array("0123456789abcdef".utf16)
-    var hexChars = [UTF16.CodeUnit]()
-    hexChars.reserveCapacity(count * 2)
-
-    for byte in self
-    {
-      let (index1, index2) = Int(byte).quotientAndRemainder(dividingBy: 16)
-      hexChars.append(hexDigits[index1])
-      hexChars.append(hexDigits[index2])
-    }
-
-    return String(utf16CodeUnits: hexChars, count: hexChars.count)
-  }
 }
 
 
