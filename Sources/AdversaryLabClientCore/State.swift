@@ -222,10 +222,14 @@ public class State
                     {
                         if let ethernetPacket = thisPacket.ethernet
                         {
-                            let wirelessPacket = Packet(ipv4Bytes: ethernetPacket.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
-                            if wirelessPacket.tcp != nil
+                            let firstByte = ethernetPacket.payload[0]
+                            if (firstByte == 0x45)
                             {
-                                self.capturePort(wirelessPacket, port)
+                                let wirelessPacket = Packet(ipv4Bytes: ethernetPacket.payload, timestamp: packet.timestamp, debugPrints: self.debugPrints)
+                                if wirelessPacket.tcp != nil
+                                {
+                                    self.capturePort(wirelessPacket, port)
+                                }
                             }
                         }
                     }
