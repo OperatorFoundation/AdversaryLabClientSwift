@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "RawPacket", targets: ["RawPacket"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.2"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.4.1"),
         .package(url: "https://github.com/OperatorFoundation/Bits.git", from: "2.0.1"),
         .package(url: "https://github.com/OperatorFoundation/Chord.git", from: "0.0.13"),
         .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "3.1.3"),
