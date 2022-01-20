@@ -390,7 +390,7 @@ public class State
         {
             for (index, rawConnection) in rawCaptured.enumerated()
             {
-                print("-> Saving complete raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
+                print("-> Saving raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
                 songLab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
             }
         }
