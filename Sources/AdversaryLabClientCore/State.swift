@@ -339,6 +339,33 @@ public class State
         print("-> Do we have any packets to save? \(!recordable.isEmpty)")
         var buffer: [ConnectionPackets] = []
         
+        // Get the allowed or blocked designation for this packet
+        var allowBlock = false
+        if let cmdLineAllowBlock = maybeAllowBlock
+        {
+            allowBlock = cmdLineAllowBlock
+        }
+        else
+        {
+            guard let queueAllowBlock = allowBlockChannel.dequeue() else
+            {
+                return
+            }
+            allowBlock = queueAllowBlock
+        }
+        
+        // Save raw packets
+        if rawCaptured.count > 0
+        {
+            for (index, rawConnection) in rawCaptured.enumerated()
+            {
+                print("-> Saving raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
+                songLab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
+            }
+        }
+        
+        print("-> @")
+        // Save complete connections
         while !recordable.isEmpty
         {
             print("-> Saving complete connections")
@@ -360,22 +387,7 @@ public class State
                 buffer.append(connPackets)
             }
         }
-        
-        print("-> @")
-        var allowBlock = false
-        if let cmdLineAllowBlock = maybeAllowBlock
-        {
-            allowBlock = cmdLineAllowBlock
-        }
-        else
-        {
-            guard let queueAllowBlock = allowBlockChannel.dequeue() else
-            {
-                return
-            }
-            allowBlock = queueAllowBlock
-        }
-        
+
         if buffer.count > 0
         {
             for (index, packet) in buffer.enumerated()
@@ -386,21 +398,12 @@ public class State
             }
         }
         
-        if rawCaptured.count > 0
-        {
-            for (index, rawConnection) in rawCaptured.enumerated()
-            {
-                print("-> Saving raw connections. (\(index+1)/\(rawCaptured.count)) --<-@")
-                songLab.AddRawTrainPacket(transport: transport, allowBlock: allowBlock, conn: rawConnection.value)
-            }
-        }
-        
-        // Usually we want both incoming and outgoingf packets
+        // Usually we want both incoming and outgoing packets
         // In the case where we know these are blocked connections
         // We want to record the data even when we have not received a response.
         // This is still a valid blocked case. We expect that some blocked connections will behave in this way.
         
-        //If the connections in this map are labeled blocked by the user
+        //If the connections in this map are blocked
         print("-> newAllowBlock is ", allowBlock)
         if allowBlock == false
         {
@@ -458,9 +461,15 @@ public class State
             //print("Zip error:\(error)")
         }
         
+        
+        
         if debug_addTrainPacketCount > 0
         {
             print("-> We saved \(debug_addTrainPacketCount) packets.")
+            if debug_savedIncompletePacketCount > 0
+            {
+                print("->\(debug_savedIncompletePacketCount) were incomplete packets.")
+            }
         }
         else
         {
