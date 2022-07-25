@@ -21,12 +21,12 @@ let package = Package(
         .package(url: "https://github.com/OperatorFoundation/PacketCaptureBPF.git", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/PacketStream.git", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Song.git", branch: "main"),
-        .package(name: "NetUtils", url: "https://github.com/OperatorFoundation/swift-netutils.git", from: "4.3.0"),
+        .package(url: "https://github.com/OperatorFoundation/swift-netutils.git", from: "4.3.0"),
         .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", branch: "main"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.12")
     ],
     targets: [
-        .target(
+        .executableTarget(
             name: "AdversaryLabClient",
             dependencies: [
                 "AdversaryLabClientCore",
@@ -37,12 +37,12 @@ let package = Package(
             "Chord",
             "Datable",
             "InternetProtocols",
-            "NetUtils",
             "PacketCaptureBPF",
             "PacketStream",
             "RawPacket",
             "SwiftQueue",
             "ZIPFoundation",
+            .product(name: "NetUtils", package: "swift-netutils"),
             .product(name: "Symphony", package: "Song"),
         ]),
         .target(name: "RawPacket"),

@@ -285,7 +285,8 @@ public class State
         
         var connPackets = rawCaptured[conn, default: RawConnectionPackets()]
         
-        if incoming {
+        if incoming
+        {
             connPackets.Incoming.append(packet)
             rawCaptured[conn] = connPackets
         }
@@ -458,10 +459,8 @@ public class State
         }
         catch
         {
-            //print("Zip error:\(error)")
+            print("Zip error:\(error)")
         }
-        
-        
         
         if debug_addTrainPacketCount > 0
         {
@@ -488,13 +487,12 @@ public class State
         
         print("\n--> We are done zipping the database. Bye Now!\n")
     }
-    
-    
 }
 
 
 #if os(macOS)
-class ZIPProgressObserver: NSObject {
+class ZIPProgressObserver: NSObject
+{
     @objc var objectToObserve: Progress
     var observation: NSKeyValueObservation?
     var displayedCount = 0
