@@ -4,9 +4,7 @@ import PackageDescription
 #if os(macOS)
 let package = Package(
     name: "AdversaryLabClientSwift",
-    platforms: [.macOS(.v10_15),
-                    .iOS(.v15)
-                    ],
+    platforms: [.macOS(.v12)],
     products: [
         .executable(name: "AdversaryLabClient", targets: ["AdversaryLabClient"]),
         .library(name: "AdversaryLabClientCore", targets: ["AdversaryLabClientCore"]),
@@ -21,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/OperatorFoundation/PacketCaptureBPF.git", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/PacketStream.git", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/Song.git", branch: "main"),
-        .package(url: "https://github.com/OperatorFoundation/swift-netutils.git", from: "4.3.0"),
+        .package(url: "https://github.com/OperatorFoundation/swift-netutils.git", branch: "main"),
         .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", branch: "main"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.12")
     ],
@@ -54,7 +52,7 @@ let package = Package(
 #else
 let package = Package(
     name: "AdversaryLabClientSwift",
-    platforms: [.macOS(.v11)],
+    platforms: [.macOS(.v12)],
     products: [
         .executable(name: "AdversaryLabClient", targets: ["AdversaryLabClient"]),
         .library(name: "AdversaryLabClientCore", targets: ["AdversaryLabClientCore"]),
@@ -62,19 +60,19 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.2"),
-        .package(url: "https://github.com/OperatorFoundation/Bits.git", from: "2.0.1"),
-        .package(url:"https://github.com/OperatorFoundation/Chord.git", from: "0.0.13"),
-        .package(url: "https://github.com/OperatorFoundation/Datable.git", from: "3.1.3"),
-        .package(url: "https://github.com/OperatorFoundation/InternetProtocols.git", from: "2.2.0"),
-        .package(url: "https://github.com/OperatorFoundation/PacketCaptureLibpcap.git", from: "0.2.3"),
-        .package(url: "https://github.com/OperatorFoundation/PacketStream.git", from: "0.2.1"),
-        .package(url: "https://github.com/OperatorFoundation/Song.git", from: "0.2.6"),
-        .package(name: "NetUtils", url: "https://github.com/svdo/swift-netutils.git", from: "4.3.0"),
-        .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", from: "0.1.1"),
+        .package(url: "https://github.com/OperatorFoundation/Bits.git", branch: "main"),
+        .package(url:"https://github.com/OperatorFoundation/Chord.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/Datable.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/InternetProtocols.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/PacketCaptureLibpcap.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/PacketStream.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/Song.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/swift-netutils.git", branch: "main"),
+        .package(url: "https://github.com/OperatorFoundation/SwiftQueue.git", branch: "main"),
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.12"),
     ],
     targets: [
-        .target(
+        .executableTarget(
             name: "AdversaryLabClient",
             dependencies: [
                 "AdversaryLabClientCore",
@@ -86,11 +84,11 @@ let package = Package(
             "Chord",
             "Datable",
             "InternetProtocols",
-            "NetUtils",
             "PacketStream",
             "RawPacket",
             "SwiftQueue",
             "ZIPFoundation",
+            .product(name: "NetUtils", package: "swift-netutils"),
             .product(name: "Symphony", package: "Song"),
             .product(name: "PacketCaptureLibpcap", package: "PacketCaptureLibpcap"),
         ]),
