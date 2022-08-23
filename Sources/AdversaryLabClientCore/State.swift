@@ -261,8 +261,6 @@ public class State
     
     func capturePort(_ packet: Packet, _ port: UInt16)
     {
-        print("-> Capturing port \(port)")
-
         guard let conn = NewConnection(packet: packet) else { return }
         guard conn.CheckPort(port: port) else { return }
         
@@ -279,7 +277,6 @@ public class State
     func recordRawPacket(_ packet: Packet, _ port: UInt16)
     {
         guard let conn = NewConnection(packet: packet) else { return }
-        //let incoming = packet.destinationPort == port
         guard let TCPsegment = packet.tcp else { return }
         let incoming = TCPsegment.destinationPort == port
         
@@ -301,8 +298,18 @@ public class State
     
     func recordPacket(_ packet: Packet, _ port: UInt16)
     {
-        guard let conn = NewConnection(packet: packet) else { return }
-        guard let TCPsegment = packet.tcp else { return }
+        guard let conn = NewConnection(packet: packet) else
+        {
+            print("-> recordPacket() failed to init a NewConnection with \(packet)")
+            return
+        }
+        
+        guard let TCPsegment = packet.tcp else
+        {
+            print("-> recordPacket() failed because packet.tcp is nil. \(packet)")
+            return
+        }
+        
         let incoming = TCPsegment.destinationPort == port
         var maybeConnPackets = captured[conn]
         
