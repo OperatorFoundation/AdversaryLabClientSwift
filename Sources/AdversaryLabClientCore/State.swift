@@ -459,7 +459,8 @@ public class State
         }
         catch
         {
-            print("Zip error:\(error)")
+            print("-> Failed to zip \(sourceURL) to \(destinationURL).")
+            print("-> Zip error:\(error)")
         }
         
         if debug_addTrainPacketCount > 0
