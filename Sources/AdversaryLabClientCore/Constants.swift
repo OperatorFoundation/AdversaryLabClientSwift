@@ -7,4 +7,5 @@
 
 import Foundation
 
-let databaseDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("adversary_data")
+let databaseDirectoryName = "adversary_data"
+let databaseDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(databaseDirectoryName)

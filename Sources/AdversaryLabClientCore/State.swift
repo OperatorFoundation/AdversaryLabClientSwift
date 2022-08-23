@@ -429,7 +429,7 @@ public class State
         }
                         
         let fileManager = FileManager()
-        let sourceURL = URL(fileURLWithPath: "adversary_data")
+        let sourceURL = URL(fileURLWithPath: databaseDirectoryName)
         let destinationURL = URL(fileURLWithPath: "adversary_data.zip")
         if fileManager.fileExists(atPath: destinationURL.path) {
             do
@@ -443,50 +443,56 @@ public class State
             }
         }
         
-        do
+        if fileManager.fileExists(atPath: sourceURL.path)
         {
-            print("-> Zipping adversary_data ......")
-            
-            #if os(macOS)
-            setbuf(__stdoutp, nil)
-            let progress = Progress()
-            let _ = ZIPProgressObserver(object: progress)
-            print("[                    ]", terminator: "")
-            try fileManager.zipItem(at: sourceURL, to: destinationURL, progress: progress)
-            #else
-            try fileManager.zipItem(at: sourceURL, to: destinationURL)
-            #endif
-        }
-        catch
-        {
-            print("-> Failed to zip \(sourceURL) to \(destinationURL).")
-            print("-> Zip error:\(error)")
-        }
-        
-        if debug_addTrainPacketCount > 0
-        {
-            print("-> We saved \(debug_addTrainPacketCount) packets.")
-            if debug_savedIncompletePacketCount > 0
+            do
             {
-                print("->\(debug_savedIncompletePacketCount) were incomplete packets.")
+                print("-> Zipping adversary_data ......")
+                #if os(macOS)
+                setbuf(__stdoutp, nil)
+                let progress = Progress()
+                let _ = ZIPProgressObserver(object: progress)
+                print("[                    ]", terminator: "")
+                try fileManager.zipItem(at: sourceURL, to: destinationURL, progress: progress)
+                #else
+                try fileManager.zipItem(at: sourceURL, to: destinationURL)
+                #endif
             }
+            catch
+            {
+                print("-> Failed to zip \(sourceURL.path) to \(destinationURL.path).")
+                print("-> Zip error:\(error)")
+            }
+            
+            if debug_addTrainPacketCount > 0
+            {
+                print("-> We saved \(debug_addTrainPacketCount) packets.")
+                if debug_savedIncompletePacketCount > 0
+                {
+                    print("->\(debug_savedIncompletePacketCount) were incomplete packets.")
+                }
+            }
+            else
+            {
+                print("-> There were no packets to save this time!")
+                print("-> DEBUG ONLY:")
+                print("-> total packet count = \(debug_packetCount)")
+                print("-> port match packet count = \(debug_portMatchPacketsCount)")
+                print("-> payload packet count = \(debug_payloadPacketsCount)")
+                print("-> recorded raw packet count = \(debug_recordedRawPacketsCount)")
+                print("-> payload recorded packet count = \(debug_recordedPacketsCount)")
+                print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
+                print("-> add train packet count = \(debug_addTrainPacketCount)")
+                print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
+                print("-> END DEBUG")
+            }
+            
+            print("\n--> We are done zipping the database. Bye Now!\n")
         }
         else
         {
-            print("-> There were no packets to save this time!")
-            print("-> DEBUG ONLY:")
-            print("-> total packet count = \(debug_packetCount)")
-            print("-> port match packet count = \(debug_portMatchPacketsCount)")
-            print("-> payload packet count = \(debug_payloadPacketsCount)")
-            print("-> recorded raw packet count = \(debug_recordedRawPacketsCount)")
-            print("-> payload recorded packet count = \(debug_recordedPacketsCount)")
-            print("-> payload recorded complete packet count = \(debug_recordedCompletePacketsCount)")
-            print("-> add train packet count = \(debug_addTrainPacketCount)")
-            print("-> add saved incomplete packet count = \(debug_savedIncompletePacketCount)")
-            print("-> END DEBUG")
+            print("-> Failed to zip the database, no file was found at \(sourceURL.path)")
         }
-        
-        print("\n--> We are done zipping the database. Bye Now!\n")
     }
 }
 
