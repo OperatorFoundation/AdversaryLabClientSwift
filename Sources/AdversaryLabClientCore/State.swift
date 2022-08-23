@@ -436,10 +436,10 @@ public class State
         }
                         
         let fileManager = FileManager()
-        let sourceURL = URL(fileURLWithPath: databaseDirectoryName)
+        //let sourceURL = URL(fileURLWithPath: databaseDirectoryName)
         let destinationURL = URL(fileURLWithPath: "adversary_data.zip")
         
-        if fileManager.fileExists(atPath: sourceURL.path)
+        if fileManager.fileExists(atPath: databaseDirectory.path)
         {
             print("-> Zipping adversary_data ......")
             
@@ -462,14 +462,14 @@ public class State
                 let progress = Progress()
                 let _ = ZIPProgressObserver(object: progress)
                 print("[                    ]", terminator: "")
-                try fileManager.zipItem(at: sourceURL, to: destinationURL, progress: progress)
+                try fileManager.zipItem(at: databaseDirectory, to: destinationURL, progress: progress)
                 #else
-                try fileManager.zipItem(at: sourceURL, to: destinationURL)
+                try fileManager.zipItem(at: databaseDirectory, to: destinationURL)
                 #endif
             }
             catch
             {
-                print("-> Failed to zip \(sourceURL.path) to \(destinationURL.path).")
+                print("-> Failed to zip \(databaseDirectory.path) to \(destinationURL.path).")
                 print("-> Zip error:\(error)")
             }
             
@@ -500,7 +500,7 @@ public class State
         }
         else
         {
-            print("-> Failed to zip the database, no file was found at \(sourceURL.path)")
+            print("-> Failed to zip the database, no file was found at \(databaseDirectory.path)")
         }
     }
 }
