@@ -261,7 +261,7 @@ public class State
     
     func capturePort(_ packet: Packet, _ port: UInt16)
     {
-        //print("-> Capturing port \(port)")
+        print("-> Capturing port \(port)")
 
         guard let conn = NewConnection(packet: packet) else { return }
         guard conn.CheckPort(port: port) else { return }
@@ -431,23 +431,25 @@ public class State
         let fileManager = FileManager()
         let sourceURL = URL(fileURLWithPath: databaseDirectoryName)
         let destinationURL = URL(fileURLWithPath: "adversary_data.zip")
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            do
-            {
-                print("-> Deleting existing adversary_data.zip")
-                try fileManager.removeItem(atPath: destinationURL.path)
-            }
-            catch let error as NSError
-            {
-                print("-> Couldn't delete existing zip archive of adversary_data: \(error)")
-            }
-        }
         
         if fileManager.fileExists(atPath: sourceURL.path)
         {
+            print("-> Zipping adversary_data ......")
+            
+            if fileManager.fileExists(atPath: destinationURL.path) {
+                do
+                {
+                    print("-> Deleting existing adversary_data.zip")
+                    try fileManager.removeItem(atPath: destinationURL.path)
+                }
+                catch let error as NSError
+                {
+                    print("-> Couldn't delete existing zip archive of adversary_data: \(error)")
+                }
+            }
+            
             do
             {
-                print("-> Zipping adversary_data ......")
                 #if os(macOS)
                 setbuf(__stdoutp, nil)
                 let progress = Progress()
