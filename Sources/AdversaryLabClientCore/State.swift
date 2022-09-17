@@ -436,7 +436,6 @@ public class State
         }
                         
         let fileManager = FileManager()
-        //let sourceURL = URL(fileURLWithPath: databaseDirectoryName)
         let destinationURL = URL(fileURLWithPath: "adversary_data.zip")
         
         if fileManager.fileExists(atPath: databaseDirectory.path)

@@ -5,3 +5,6 @@ import AdversaryLabClientCoreTests
 var tests = [XCTestCaseEntry]()
 tests += AdversaryLabClientCoreTests.allTests()
 XCTMain(tests)
+
+
+
