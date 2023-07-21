@@ -1,10 +1,10 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.8
 import PackageDescription
 
 #if os(macOS)
 let package = Package(
     name: "AdversaryLabClientSwift",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v13)],
     products: [
         .executable(name: "AdversaryLabClient", targets: ["AdversaryLabClient"]),
         .library(name: "AdversaryLabClientCore", targets: ["AdversaryLabClientCore"]),
